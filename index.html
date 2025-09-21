@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Redirecionando…</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+    .card { max-width: 560px; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); text-align:center; }
+    .spinner { width: 24px; height: 24px; border: 3px solid #ddd; border-top-color: #000; border-radius: 50%; animation: spin 1s linear infinite; margin: 12px auto; }
+    @keyframes spin { to { transform: rotate(360deg) } }
+    a.btn { display:inline-block; margin-top:12px; padding:10px 14px; border:1px solid #000; border-radius:8px; text-decoration:none; color:#000 }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Redirecionando para o pagamento…</h1>
+    <div class="spinner"></div>
+    <p>Se nada acontecer em alguns segundos, clique no botão abaixo.</p>
+    <p><a id="fallback" class="btn" href="#" target="_top" rel="noopener">Abrir página de pagamento</a></p>
+  </div>
+
+  <script>
+    const MAKE_LOOKUP_ENDPOINT = "https://hook.us2.make.com/64422g2yj2a23vb3l3icl3zkgolasqtw";
+
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('tallyResponseId') || params.get('responseId') || params.get('submissionId');
+      if (!id) { alert('ID da submissão não encontrado.'); return; }
+
+      try {
+        const r = await fetch(MAKE_LOOKUP_ENDPOINT + '?submissionId=' + encodeURIComponent(id), { mode: 'cors' });
+        if (!r.ok) throw new Error('Falha na consulta');
+        const data = await r.json();
+        if (data && data.invoiceUrl) {
+          document.getElementById('fallback').href = data.invoiceUrl;
+          window.location.replace(data.invoiceUrl);
+        } else {
+          alert('Link de pagamento não encontrado. Tente novamente.');
+        }
+      } catch (e) {
+        alert('Não foi possível obter o link de pagamento agora.');
+      }
+    })();
+  </script>
+</body>
+</html>
