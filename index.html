@@ -16,32 +16,46 @@
   <div class="card">
     <h1>Redirecionando para o pagamento…</h1>
     <div class="spinner"></div>
-    <p>Se nada acontecer em alguns segundos, clique no botão abaixo.</p>
+    <p>Aguarde alguns segundos. Se nada acontecer, clique no botão abaixo.</p>
     <p><a id="fallback" class="btn" href="#" target="_top" rel="noopener">Abrir página de pagamento</a></p>
   </div>
 
   <script>
-    const MAKE_LOOKUP_ENDPOINT = "https://hook.us2.make.com/64422g2yj2a23vb3l3icl3zkgolasqtw";
+    const MAKE_LOOKUP_ENDPOINT = "https://hook.us2.make.com/SEU_WEBHOOK_LOOKUP"; // substitua pelo seu endpoint do Make
+    const MAX_ATTEMPTS = 10; // até 10 tentativas
+    const INTERVAL = 3000;   // intervalo de 3s entre tentativas
 
-    (async () => {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get('tallyResponseId') || params.get('responseId') || params.get('submissionId');
-      if (!id) { alert('ID da submissão não encontrado.'); return; }
-
+    async function checkInvoice(id, attempt = 1) {
       try {
         const r = await fetch(MAKE_LOOKUP_ENDPOINT + '?submissionId=' + encodeURIComponent(id), { mode: 'cors' });
         if (!r.ok) throw new Error('Falha na consulta');
         const data = await r.json();
+        
         if (data && data.invoiceUrl) {
           document.getElementById('fallback').href = data.invoiceUrl;
           window.location.replace(data.invoiceUrl);
+        } else if (attempt < MAX_ATTEMPTS) {
+          console.log(`Tentativa ${attempt}: link ainda não disponível. Tentando de novo...`);
+          setTimeout(() => checkInvoice(id, attempt + 1), INTERVAL);
         } else {
-          alert('Link de pagamento não encontrado. Tente novamente.');
+          alert('Não foi possível localizar o link de pagamento. Tente novamente mais tarde.');
         }
       } catch (e) {
-        alert('Não foi possível obter o link de pagamento agora.');
+        if (attempt < MAX_ATTEMPTS) {
+          setTimeout(() => checkInvoice(id, attempt + 1), INTERVAL);
+        } else {
+          alert('Erro ao buscar link de pagamento. Tente mais tarde.');
+        }
       }
-    })();
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('tallyResponseId') || params.get('responseId') || params.get('submissionId');
+    if (!id) {
+      alert('ID da submissão não encontrado.');
+    } else {
+      checkInvoice(id);
+    }
   </script>
 </body>
 </html>
