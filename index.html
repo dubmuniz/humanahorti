@@ -64,8 +64,9 @@
       if (data && data.invoiceUrl) {
         // remove espaços/quebras de linha do retorno
         const cleanUrl = data.invoiceUrl.trim();
-        document.getElementById('fallback').href = cleanUrl;
-        window.location.replace(cleanUrl);
+       const cleanUrl = data.invoiceUrl.trim();
+document.getElementById('fallback').href = cleanUrl;
+window.location.replace(cleanUrl);
       } else if (attempt < MAX_ATTEMPTS) {
         console.log(`Tentativa ${attempt}: link ainda não disponível.`);
         setTimeout(() => checkInvoice(id, attempt + 1), INTERVAL);
