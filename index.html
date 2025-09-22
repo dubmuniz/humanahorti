@@ -1,93 +1,11 @@
 <!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Redirecionando…</title>
-  <style>
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-height:100vh;
-      margin:0;
-    }
-    .card {
-      max-width: 560px;
-      padding: 24px;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.06);
-      text-align:center;
-    }
-    .spinner {
-      width: 24px;
-      height: 24px;
-      border: 3px solid #ddd;
-      border-top-color: #000;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 12px auto;
-    }
-    @keyframes spin { to { transform: rotate(360deg) } }
-    a.btn {
-      display:inline-block;
-      margin-top:12px;
-      padding:10px 14px;
-      border:1px solid #000;
-      border-radius:8px;
-      text-decoration:none;
-      color:#000
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Redirecionando para o pagamento…</h1>
-    <div class="spinner"></div>
-    <p>Aguarde alguns segundos. Se nada acontecer, clique no botão abaixo.</p>
-    <p><a id="fallback" class="btn" href="#" target="_top" rel="noopener">Abrir página de pagamento</a></p>
-  </div>
-  <script>
-  const MAKE_LOOKUP_ENDPOINT = "https://hook.us2.make.com/SEU-WEBHOOK"; 
-  const MAX_ATTEMPTS = 12;  // até 12 tentativas
-  const INTERVAL = 5000;    // 5s entre tentativas
-
-  async function checkInvoice(id, attempt = 1) {
-    try {
-      const r = await fetch(MAKE_LOOKUP_ENDPOINT + '?responseId=' + encodeURIComponent(id), { mode: 'cors' });
-      const data = await r.json();
-
-      if (data && data.invoiceUrl && data.invoiceUrl.trim() !== "") {
-        const cleanUrl = data.invoiceUrl.trim();
-        document.getElementById('fallback').href = cleanUrl;
-        window.location.replace(cleanUrl);
-      } else if (attempt < MAX_ATTEMPTS) {
-        console.log(`Tentativa ${attempt}: link ainda não disponível.`);
-        setTimeout(() => checkInvoice(id, attempt + 1), INTERVAL);
-      } else {
-        alert('Não foi possível localizar o link de pagamento. Tente novamente mais tarde.');
-      }
-    } catch (e) {
-      if (attempt < MAX_ATTEMPTS) {
-        setTimeout(() => checkInvoice(id, attempt + 1), INTERVAL);
-      } else {
-        alert('Erro ao buscar link de pagamento.');
-      }
-    }
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get('responseId');
-  if (!id) {
-    alert('ID não encontrado.');
-  } else {
-    checkInvoice(id);
-  }
-</script>
-</body>
-</html>
-
-
-
+<meta charset="utf-8">
+<title>Pagamento</title>
+<form action="https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a" method="post">
+  <label>Nome <input name="nome" required></label><br>
+  <label>E-mail <input type="email" name="email" required></label><br>
+  <label>CPF <input name="cpf" pattern="\d{11}" required></label><br>
+  <label>Telefone <input name="telefone"></label><br>
+  <label>Valor (R$) <input type="number" step="0.01" name="valor" required></label><br>
+  <button type="submit">Gerar pagamento</button>
+</form>
