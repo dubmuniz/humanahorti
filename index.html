@@ -56,7 +56,7 @@
 
     async function checkInvoice(id, attempt = 1) {
       try {
-        const r = await fetch(MAKE_LOOKUP_ENDPOINT + '?submissionId=' + encodeURIComponent(id), { mode: 'cors' });
+        const r = await fetch(MAKE_LOOKUP_ENDPOINT + '?responseId=' + encodeURIComponent(id), { mode: 'cors' });
         if (!r.ok) throw new Error('Falha na consulta');
         const data = await r.json();
 
@@ -82,7 +82,7 @@
 
     // coleta o parâmetro submissionId (ou responseId como fallback)
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('submissionId') || params.get('responseId');
+    const id = params.get('responseId') || params.get('responseId');
     if (!id) {
       alert('ID da submissão não encontrado.');
     } else {
