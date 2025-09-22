@@ -52,8 +52,8 @@
 
   <script>
     const MAKE_LOOKUP_ENDPOINT = "https://hook.us2.make.com/vkcmbdmtjrcha5crsl6qdr737l4qghmf"; // seu Webhook GET (cenário B)
-    const MAX_ATTEMPTS = 10; // até 10 tentativas
-    const INTERVAL = 3000;   // intervalo de 3s
+    const MAX_ATTEMPTS = 20; // até 10 tentativas
+    const INTERVAL = 5000;   // intervalo de 3s
 
     async function checkInvoice(id, attempt = 1) {
       try {
