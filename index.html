@@ -80,14 +80,15 @@
       }
     }
 
-    // coleta o parâmetro submissionId (ou responseId como fallback)
+    // coleta apenas responseId
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('responseId') || params.get('responseId');
+    const id = params.get('responseId');
     if (!id) {
-      alert('ID da submissão não encontrado.');
+      alert('responseId não encontrado na URL.');
     } else {
       checkInvoice(id);
     }
   </script>
 </body>
 </html>
+
