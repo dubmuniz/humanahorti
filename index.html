@@ -51,41 +51,43 @@
   </div>
 
   <script>
-    const MAKE_LOOKUP_ENDPOINT = "https://hook.us2.make.com/vkcmbdmtjrcha5crsl6qdr737l4qghmf"; // seu Webhook GET (cenário B)
-    const MAX_ATTEMPTS = 20; // até 10 tentativas
-    const INTERVAL = 5000;   // intervalo de 3s
+  const MAKE_LOOKUP_ENDPOINT = "https://hook.us2.make.com/vkcmbdmtjrcha5crsl6qdr737l4qghmf"; // seu webhook
+  const MAX_ATTEMPTS = 10; // até 10 tentativas
+  const INTERVAL = 3000;   // 3s entre tentativas
 
-    async function checkInvoice(id, attempt = 1) {
-      try {
-        const r = await fetch(MAKE_LOOKUP_ENDPOINT + '?submissionId=' + encodeURIComponent(id), { mode: 'cors' });
-        if (!r.ok) throw new Error('Falha na consulta');
-        const data = await r.json();
-        
-        if (data && data.invoiceUrl) {
-          document.getElementById('fallback').href = data.invoiceUrl;
-          window.location.replace(data.invoiceUrl);
-        } else if (attempt < MAX_ATTEMPTS) {
-          console.log(`Tentativa ${attempt}: link ainda não disponível. Tentando de novo...`);
-          setTimeout(() => checkInvoice(id, attempt + 1), INTERVAL);
-        } else {
-          alert('Não foi possível localizar o link de pagamento. Tente novamente mais tarde.');
-        }
-      } catch (e) {
-        if (attempt < MAX_ATTEMPTS) {
-          setTimeout(() => checkInvoice(id, attempt + 1), INTERVAL);
-        } else {
-          alert('Erro ao buscar link de pagamento. Tente mais tarde.');
-        }
+  async function checkInvoice(id, attempt = 1) {
+    try {
+      const r = await fetch(MAKE_LOOKUP_ENDPOINT + '?submissionId=' + encodeURIComponent(id), { mode: 'cors' });
+      if (!r.ok) throw new Error('Falha na consulta');
+      const data = await r.json();
+
+      if (data && data.invoiceUrl) {
+        // remove espaços/quebras de linha do retorno
+        const cleanUrl = data.invoiceUrl.trim();
+        document.getElementById('fallback').href = cleanUrl;
+        window.location.replace(cleanUrl);
+      } else if (attempt < MAX_ATTEMPTS) {
+        console.log(`Tentativa ${attempt}: link ainda não disponível.`);
+        setTimeout(() => checkInvoice(id, attempt + 1), INTERVAL);
+      } else {
+        alert('Não foi possível localizar o link de pagamento.');
+      }
+    } catch (e) {
+      if (attempt < MAX_ATTEMPTS) {
+        setTimeout(() => checkInvoice(id, attempt + 1), INTERVAL);
+      } else {
+        alert('Erro ao buscar link de pagamento.');
       }
     }
+  }
 
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('submissionId');  // <-- sempre usa submissionId
-    if (!id) {
-      alert('ID da submissão não encontrado.');
-    } else {
-      checkInvoice(id);
-    }
-  </script>
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('submissionId') || params.get('responseId');
+  if (!id) {
+    alert('ID da submissão não encontrado.');
+  } else {
+    checkInvoice(id);
+  }
+</script>
 </body>
 </html>
