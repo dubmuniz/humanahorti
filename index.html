@@ -49,19 +49,19 @@
     <p>Aguarde alguns segundos. Se nada acontecer, clique no botão abaixo.</p>
     <p><a id="fallback" class="btn" href="#" target="_top" rel="noopener">Abrir página de pagamento</a></p>
   </div>
+
   <script>
-    const MAKE_LOOKUP_ENDPOINT = "https://hook.us2.make.com/vkcmbdmtjrcha5crsl6qdr737l4qghmf"; // seu webhook
+    const MAKE_LOOKUP_ENDPOINT = "https://hook.us2.make.com/vkcmbdmtjrcha5crsl6qdr737l4qghmf"; // seu webhook Make
     const MAX_ATTEMPTS = 10; // até 10 tentativas
     const INTERVAL = 3000;   // 3s entre tentativas
 
     async function checkInvoice(id, attempt = 1) {
       try {
-        const r = await fetch(MAKE_LOOKUP_ENDPOINT + '?responseId=' + encodeURIComponent(id), { mode: 'cors' });
+        const r = await fetch(MAKE_LOOKUP_ENDPOINT + '?submissionId=' + encodeURIComponent(id), { mode: 'cors' });
         if (!r.ok) throw new Error('Falha na consulta');
         const data = await r.json();
 
         if (data && data.invoiceUrl) {
-          // remove espaços/quebras de linha do retorno
           const cleanUrl = data.invoiceUrl.trim();
           document.getElementById('fallback').href = cleanUrl;
           window.location.replace(cleanUrl);
@@ -80,15 +80,16 @@
       }
     }
 
-    // coleta apenas responseId
+    // coleta SEMPRE submissionId
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('responseId');
+    const id = params.get('submissionId');
     if (!id) {
-      alert('responseId não encontrado na URL.');
+      alert('ID da submissão não encontrado.');
     } else {
       checkInvoice(id);
     }
   </script>
 </body>
 </html>
+
 
