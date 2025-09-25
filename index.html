@@ -7,8 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --verde:#37954a; /* Humana */
-      --laranja:#f07e2d; /* Humana */
+      --verde:#37954a;
+      --laranja:#f07e2d;
       --cinza:#f5f7f8;
       --preto:#1a1a1a;
     }
@@ -26,7 +26,6 @@
     }
     textarea{min-height:96px;resize:vertical}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
     .full{grid-column:1/-1}
     .btn{
       appearance:none;border:0;border-radius:14px;padding:14px 18px;
@@ -34,7 +33,6 @@
     }
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .footer{margin-top:12px;font-size:.85rem;color:#4b5563}
-    .brand{display:flex;align-items:center;gap:8px;margin-top:8px}
     .priceBox{padding:10px 12px;background:#fff;border:1px dashed #d7dde2;border-radius:10px;font-weight:600}
   </style>
 </head>
@@ -44,7 +42,7 @@
       <img src="logo-humana-1-1080x480.png" alt="Humana Brasil">
       <div>
         <h1>Humana Brasil • Pagamento de Cesta</h1>
-        <p class="sub">Preencha os dados para gerar o link de pagamento</p>
+        <p class="sub">Preencha os dados ou consulte pelo CPF</p>
       </div>
     </header>
 
@@ -52,20 +50,33 @@
       <form id="formPagamento" action="https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a" method="post" novalidate>
         <div class="grid">
           <div>
+            <label for="cpf">CPF</label>
+            <input id="cpf" name="cpf" inputmode="numeric" placeholder="000.000.000-00" required>
+            <button type="button" class="btn" style="margin-top:6px;width:100%" onclick="consultarCliente()">Consultar CPF</button>
+          </div>
+          <div>
             <label for="nome">Nome completo</label>
-            <input id="nome" name="nome" required autocomplete="name">
+            <input id="nome" name="nome" required>
           </div>
           <div>
             <label for="email">E-mail</label>
-            <input id="email" name="email" type="email" required autocomplete="email">
-          </div>
-          <div>
-            <label for="cpf">CPF</label>
-            <input id="cpf" name="cpf" inputmode="numeric" placeholder="000.000.000-00" required>
+            <input id="email" name="email" type="email" required>
           </div>
           <div>
             <label for="telefone">Telefone</label>
             <input id="telefone" name="telefone" inputmode="tel" placeholder="(00) 90000-0000">
+          </div>
+          <div class="full">
+            <label for="endereco">Endereço</label>
+            <input id="endereco" name="endereco">
+          </div>
+          <div>
+            <label for="numero">Número</label>
+            <input id="numero" name="numero">
+          </div>
+          <div>
+            <label for="complemento">Complemento</label>
+            <input id="complemento" name="complemento">
           </div>
           <div>
             <label for="cesta">Opções de cesta</label>
@@ -81,13 +92,11 @@
             <label>Valor selecionado</label>
             <div id="valorVisivel" class="priceBox">R$ —</div>
           </div>
-          <div class="full">
-            <label for="obs">Observações</label>
-            <textarea id="obs" name="observacoes" placeholder="Ex.: Sem coentro, entregar à tarde"></textarea>
-          </div>
         </div>
 
         <input type="hidden" id="valor" name="valor" value="">
+        <input type="hidden" id="idCliente" name="idCliente" value="">
+
         <div style="margin-top:18px">
           <button class="btn" id="btnSubmit" type="submit" disabled>Gerar pagamento</button>
         </div>
@@ -105,16 +114,7 @@
   const btn = document.getElementById('btnSubmit');
   const cpf = document.getElementById('cpf');
 
-  // máscara CPF
-  cpf.addEventListener('input', () => {
-    let v = cpf.value.replace(/\D/g,'').slice(0,11);
-    if (v.length > 9) cpf.value = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/,'$1.$2.$3-$4');
-    else if (v.length > 6) cpf.value = v.replace(/(\d{3})(\d{3})(\d{0,3})/,'$1.$2.$3');
-    else if (v.length > 3) cpf.value = v.replace(/(\d{3})(\d{0,3})/,'$1.$2');
-    else cpf.value = v;
-  });
-
-  // atualiza preço ao selecionar cesta
+  // atualizar preço
   cesta.addEventListener('change', () => {
     const v = PRICES[cesta.value];
     if (typeof v === 'number') {
@@ -128,24 +128,36 @@
     }
   });
 
-  // pré-selecionar cesta via query string
-  const params = new URLSearchParams(window.location.search);
-  const cestaParam = params.get("cesta");
-  if (cestaParam) {
-    cesta.value = cestaParam;
-    cesta.dispatchEvent(new Event("change"));
+  // consulta cliente via Make → Asaas
+  async function consultarCliente() {
+    const rawCpf = cpf.value.replace(/\D/g,'');
+    if (!rawCpf) {
+      alert("Digite um CPF válido.");
+      return;
+    }
+    try {
+      const resp = await fetch("https://hook.us2.make.com/ltihpmu3xpwf9rkopifyfd3imdt9ahj1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cpf: rawCpf })
+      });
+      const data = await resp.json();
+      if (data.nome) {
+        document.getElementById("nome").value = data.nome;
+        document.getElementById("email").value = data.email;
+        document.getElementById("telefone").value = data.telefone;
+        document.getElementById("endereco").value = data.endereco;
+        document.getElementById("numero").value = data.numero;
+        document.getElementById("complemento").value = data.complemento;
+        document.getElementById("idCliente").value = data.idCliente;
+      } else {
+        alert("Cliente não encontrado. Preencha os dados.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro na consulta ao Asaas.");
+    }
   }
-
-  // envia CPF só com dígitos
-  form.addEventListener('submit', (e) => {
-    const raw = cpf.value.replace(/\D/g,'');
-    const hidden = document.createElement('input');
-    hidden.type = 'hidden';
-    hidden.name = 'cpf';
-    hidden.value = raw;
-    cpf.disabled = true;
-    form.appendChild(hidden);
-  });
 </script>
 </body>
 </html>
