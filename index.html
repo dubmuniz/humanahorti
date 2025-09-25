@@ -7,8 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --verde:#37954a;
-      --laranja:#f07e2d;
+      --verde:#37954a; /* Humana */
+      --laranja:#f07e2d; /* Humana */
       --cinza:#f5f7f8;
       --preto:#1a1a1a;
     }
@@ -49,7 +49,7 @@
     </header>
 
     <div class="card">
-      <form id="formPagamento" method="post" novalidate>
+      <form id="formPagamento" action="https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a" method="post" novalidate>
         <div class="grid">
           <div>
             <label for="nome">Nome completo</label>
@@ -66,18 +66,6 @@
           <div>
             <label for="telefone">Telefone</label>
             <input id="telefone" name="telefone" inputmode="tel" placeholder="(00) 90000-0000">
-          </div>
-          <div class="full">
-            <label for="endereco">Endereço</label>
-            <input id="endereco" name="endereco" required>
-          </div>
-          <div>
-            <label for="numero">Número</label>
-            <input id="numero" name="numero" required>
-          </div>
-          <div>
-            <label for="complemento">Complemento</label>
-            <input id="complemento" name="complemento">
           </div>
           <div>
             <label for="cesta">Opções de cesta</label>
@@ -109,7 +97,7 @@
   </div>
 
 <script>
-  const PRICES = { "6": 59.90, "12": 99.90, "18": 139.90 };
+  const PRICES = { "6": 59.90, "12": 99.90, "18": 139.90, "assinatura": 99.90 };
   const form = document.getElementById('formPagamento');
   const cesta = document.getElementById('cesta');
   const valorHidden = document.getElementById('valor');
@@ -128,25 +116,25 @@
 
   // atualiza preço ao selecionar cesta
   cesta.addEventListener('change', () => {
-    if (cesta.value === 'assinatura') {
-      valorHidden.value = 99.90; // valor da assinatura
-      valorVisivel.textContent = "R$ 99,90 (assinatura)";
-      form.action = " https://hook.us2.make.com/wbq4ivw1gaxipq5kyuwh6mkkk5b3ha7e"; // webhook específico
+    const v = PRICES[cesta.value];
+    if (typeof v === 'number') {
+      valorHidden.value = v.toFixed(2);
+      valorVisivel.textContent = `R$ ${v.toFixed(2).replace('.',',')}`;
       btn.disabled = false;
     } else {
-      const v = PRICES[cesta.value];
-      if (typeof v === 'number') {
-        valorHidden.value = v.toFixed(2);
-        valorVisivel.textContent = `R$ ${v.toFixed(2).replace('.',',')}`;
-        form.action = " https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a"; // webhook padrão
-        btn.disabled = false;
-      } else {
-        valorHidden.value = '';
-        valorVisivel.textContent = 'R$ —';
-        btn.disabled = true;
-      }
+      valorHidden.value = '';
+      valorVisivel.textContent = 'R$ —';
+      btn.disabled = true;
     }
   });
+
+  // pré-selecionar cesta via query string
+  const params = new URLSearchParams(window.location.search);
+  const cestaParam = params.get("cesta");
+  if (cestaParam) {
+    cesta.value = cestaParam;
+    cesta.dispatchEvent(new Event("change"));
+  }
 
   // envia CPF só com dígitos
   form.addEventListener('submit', (e) => {
@@ -161,4 +149,3 @@
 </script>
 </body>
 </html>
-
