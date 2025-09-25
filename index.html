@@ -158,6 +158,14 @@
       alert("Erro na consulta ao Asaas.");
     }
   }
+
+  // pré-selecionar cesta via query string
+  const params = new URLSearchParams(window.location.search);
+  const cestaParam = params.get("cesta");
+  if (cestaParam) {
+    cesta.value = cestaParam;
+    cesta.dispatchEvent(new Event("change")); // dispara atualização do preço
+  }
 </script>
 </body>
 </html>
