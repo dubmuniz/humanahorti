@@ -59,7 +59,7 @@ info.textContent = `Escolha até ${CESTA_TAMANHO} itens para sua cesta.`;
 // Você pode hospedar o arquivo produtos.json no mesmo servidor ou GitHub Pages
 async function carregarProdutos() {
   try {
-    const r = await fetch("https://SEU_DOMINIO/produtos.json");
+    const r = await fetch("https://dubmuniz.github.io/humanahorti/produtos.json");
     const produtos = await r.json();
     produtos.forEach(p => {
       const div = document.createElement("div");
@@ -108,7 +108,7 @@ document.getElementById("formItens").addEventListener("submit", async e => {
   };
 
   try {
-    const resp = await fetch("https://hook.us2.make.com/SEU_WEBHOOK_COBRANCA", {
+    const resp = await fetch("https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
