@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Escolha dos Itens</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;800&display=swap" rel="stylesheet">
+<style>
+:root{--verde:#37954a;--laranja:#f07e2d;--cinza:#f5f7f8;}
+body{margin:0;font-family:Montserrat;background:#fff;color:#1a1a1a}
+.wrap{max-width:720px;margin:24px auto;padding:24px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.item{display:flex;align-items:center;gap:10px;padding:8px;background:var(--cinza);border-radius:10px}
+.item img{width:48px;height:48px;border-radius:8px;object-fit:cover}
+.btn{appearance:none;border:0;border-radius:14px;padding:14px 18px;
+background:var(--laranja);color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 style="color:var(--verde)">Monte sua cesta</h1>
+  <p id="infoCesta">Carregando...</p>
+  <form id="formItens">
+    <div id="listaItens" class="grid"></div>
+    <button class="btn" type="submit">Gerar pagamento</button>
+  </form>
+</div>
+
+<script>
+const params=new URLSearchParams(window.location.search);
+const idCliente=params.get("idCliente");
+const tipoCesta=params.get("cesta");
+
+// define tamanho e valor dinamicamente
+let CESTA_TAMANHO=6;
+let VALOR_CESTA=59.90;
+if(tipoCesta==="12"){CESTA_TAMANHO=12;VALOR_CESTA=99.90;}
+if(tipoCesta==="18"){CESTA_TAMANHO=18;VALOR_CESTA=139.90;}
+if(tipoCesta==="assinatura"){CESTA_TAMANHO=12;VALOR_CESTA=99.90;}
+
+const lista=document.getElementById("listaItens");
+const info=document.getElementById("infoCesta");
+info.textContent=`Você pode escolher até ${CESTA_TAMANHO} itens.`;
+
+async function carregarProdutos(){
+  const r=await fetch("https://SEU_DOMINIO/produtos.json");
+  const produtos=await r.json();
+  produtos.forEach(p=>{
+    const div=document.createElement("div");
+    div.className="item";
+    div.innerHTML=`<label><input type="checkbox" name="itens" value="${p.nome}"> 
+                   <img src="${p.img}" alt="${p.nome}">${p.nome}</label>`;
+    lista.appendChild(div);
+  });
+}
+carregarProdutos();
+
+document.getElementById("formItens").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const itens=[...document.querySelectorAll('input[name="itens"]:checked')].map(i=>i.value);
+  if(itens.length===0){alert("Escolha ao menos um item.");return;}
+  if(itens.length>CESTA_TAMANHO){alert("Você escolheu itens demais.");return;}
+  try{
+    const resp=await fetch("https://hook.us2.make.com/SEU_WEBHOOK_COBRANCA",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({idCliente,valor:VALOR_CESTA,itens,tipoCesta})
+    });
+    const data=await resp.json();
+    if(data.paymentLink){
+      window.location.href=data.paymentLink;
+    }else{
+      alert("Erro ao gerar pagamento.");
+    }
+  }catch(e){
+    alert("Erro de conexão ao gerar cobrança.");
+  }
+});
+</script>
+</body>
+</html>
