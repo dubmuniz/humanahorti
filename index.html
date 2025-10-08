@@ -34,6 +34,7 @@
     .footer{margin-top:12px;font-size:.85rem;color:#4b5563}
     .lgpd-box{margin-top:16px;font-size:.9rem;line-height:1.4;color:#333}
     .lgpd-box input{margin-right:8px}
+    .info-cesta{margin-top:8px;font-size:0.95rem;color:#333;font-weight:500}
   </style>
 </head>
 <body>
@@ -63,6 +64,7 @@
               <option value="18">Cesta de 18 itens</option>
               <option value="assinatura">Assinatura mensal</option>
             </select>
+            <p id="infoCesta" class="info-cesta"></p>
           </div>
         </div>
 
@@ -87,15 +89,47 @@
 const cpfInput = document.getElementById('cpf');
 const cestaSelect = document.getElementById('cesta');
 const lgpdCheck = document.getElementById('lgpd');
+const infoCesta = document.getElementById('infoCesta');
 
-// --- NOVO: pré-selecionar cesta pelo parâmetro da URL ---
+// --- valores e textos das cestas ---
+const INFO = {
+  "6": {texto: "Cesta de 6 itens", preco: "R$ 59,90"},
+  "12": {texto: "Cesta de 12 itens", preco: "R$ 99,90"},
+  "18": {texto: "Cesta de 18 itens", preco: "R$ 139,90"},
+  "assinatura": {texto: "Assinatura mensal", preco: "R$ 99,90"}
+};
+
+// --- pré-selecionar cesta pelo parâmetro da URL ---
 const params = new URLSearchParams(window.location.search);
-const cestaParam = params.get("cesta");
+let cestaParam = params.get("cesta");
+
 if (cestaParam) {
-  cestaSelect.value = cestaParam.trim().toLowerCase();
+  cestaParam = cestaParam.trim().toLowerCase();
+
+  // normaliza variações
+  if (cestaParam === "06" || cestaParam === "cesta6") cestaParam = "6";
+  if (cestaParam === "012" || cestaParam === "cesta12") cestaParam = "12";
+  if (cestaParam === "018" || cestaParam === "cesta18") cestaParam = "18";
+  if (cestaParam.includes("assinatura")) cestaParam = "assinatura";
+
+  cestaSelect.value = cestaParam;
+  atualizarInfoCesta(cestaParam);
 }
 
-// --- função principal ---
+// --- atualiza descrição ao mudar cesta manualmente ---
+cestaSelect.addEventListener("change", e => {
+  atualizarInfoCesta(e.target.value);
+});
+
+function atualizarInfoCesta(valor) {
+  if (INFO[valor]) {
+    infoCesta.textContent = `${INFO[valor].texto} — ${INFO[valor].preco}`;
+  } else {
+    infoCesta.textContent = "";
+  }
+}
+
+// --- consulta no Make ---
 async function consultarCliente() {
   const cpf = cpfInput.value.replace(/\D/g,'');
   const cesta = cestaSelect.value;
@@ -125,6 +159,5 @@ async function consultarCliente() {
   }
 }
 </script>
-
 </body>
 </html>
