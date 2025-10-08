@@ -6,18 +6,78 @@
 <title>Humana Brasil • Escolha dos Itens</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;800&display=swap" rel="stylesheet">
 <style>
-:root{--verde:#37954a;--laranja:#f07e2d;--cinza:#f5f7f8;}
-body{margin:0;font-family:Montserrat;background:#fff;color:#1a1a1a}
-.wrap{max-width:720px;margin:24px auto;padding:24px}
-header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
-header img{height:56px;width:auto}
-h1{margin:0;font-weight:800;font-size:1.4rem;color:var(--verde)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.item{display:flex;align-items:center;gap:10px;padding:8px;background:var(--cinza);border-radius:10px}
-.item img{width:48px;height:48px;border-radius:8px;object-fit:cover}
-.btn{appearance:none;border:0;border-radius:14px;padding:14px 18px;
-background:var(--laranja);color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:16px}
-.footer{margin-top:16px;font-size:.85rem;color:#4b5563;text-align:center}
+:root {
+  --verde:#37954a;
+  --laranja:#f07e2d;
+  --cinza:#f5f7f8;
+}
+body {
+  margin:0;
+  font-family:Montserrat;
+  background:#fff;
+  color:#1a1a1a;
+}
+.wrap {
+  max-width:720px;
+  margin:24px auto;
+  padding:24px;
+}
+header {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  margin-bottom:16px;
+}
+header img {
+  height:56px;
+  width:auto;
+}
+h1 {
+  margin:0;
+  font-weight:800;
+  font-size:1.4rem;
+  color:var(--verde);
+}
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.item {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px 10px;
+  background:var(--cinza);
+  border-radius:10px;
+}
+select {
+  padding:6px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  font-family:inherit;
+  font-size:.95rem;
+  width:60px;
+  text-align:center;
+}
+.btn {
+  appearance:none;
+  border:0;
+  border-radius:14px;
+  padding:14px 18px;
+  background:var(--laranja);
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+  width:100%;
+  margin-top:16px;
+}
+.footer {
+  margin-top:16px;
+  font-size:.85rem;
+  color:#4b5563;
+  text-align:center;
+}
 </style>
 </head>
 <body>
@@ -38,12 +98,12 @@ background:var(--laranja);color:#fff;font-weight:800;cursor:pointer;width:100%;m
 </div>
 
 <script>
-// -------- PARÂMETROS DA URL --------
+// ---------------- PARÂMETROS ----------------
 const params = new URLSearchParams(window.location.search);
 const idCliente = params.get("idCliente");
 const tipoCesta = params.get("cesta");
 
-// -------- CONFIGURAÇÃO DAS CESTAS --------
+// ---------------- CONFIGURAÇÃO DAS CESTAS ----------------
 let CESTA_TAMANHO = 6;
 let VALOR_CESTA = 59.90;
 
@@ -53,49 +113,64 @@ if (tipoCesta === "assinatura") { CESTA_TAMANHO = 12; VALOR_CESTA = 99.90; }
 
 const lista = document.getElementById("listaItens");
 const info = document.getElementById("infoCesta");
-info.textContent = `Escolha até ${CESTA_TAMANHO} itens para sua cesta.`;
+info.textContent = `Escolha até ${CESTA_TAMANHO} unidades no total (máx. 3 por item).`;
 
-// -------- CARREGAR LISTA DE PRODUTOS --------
-// Você pode hospedar o arquivo produtos.json no mesmo servidor ou GitHub Pages
+// ---------------- LISTA DE PRODUTOS ----------------
+// O arquivo produtos.json deve conter apenas um array de nomes, assim:
+// ["Banana prata", "Cenoura", "Tomate salada"]
 async function carregarProdutos() {
   try {
-    const r = await fetch("produtos.json");
+    const r = await fetch("https://dubmuniz.github.io/humanahorti/produtos.json");
+    if (!r.ok) throw new Error("Falha ao carregar produtos.");
     const produtos = await r.json();
-    produtos.forEach(p => {
+
+    produtos.forEach(nome => {
       const div = document.createElement("div");
       div.className = "item";
       div.innerHTML = `
-        <label>
-          <input type="checkbox" name="itens" value="${p.nome}">
-          <img src="${p.img}" alt="${p.nome}">${p.nome}
-        </label>`;
+        <span>${nome}</span>
+        <select name="qtd" data-item="${nome}">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+        </select>`;
       lista.appendChild(div);
     });
 
-    // limita número de seleções
-    document.querySelectorAll('input[name="itens"]').forEach(chk => {
-      chk.addEventListener('change', limitarSelecao);
+    document.querySelectorAll('select[name="qtd"]').forEach(sel => {
+      sel.addEventListener('change', verificarLimite);
     });
-  } catch (e) {
+  } catch (err) {
+    console.error(err);
     alert("Erro ao carregar lista de produtos.");
   }
 }
 
-function limitarSelecao() {
-  const marcados = document.querySelectorAll('input[name="itens"]:checked');
-  if (marcados.length > CESTA_TAMANHO) {
-    this.checked = false;
-    alert(`Limite atingido: máximo de ${CESTA_TAMANHO} itens.`);
+// ---------------- CONTROLE DE LIMITE TOTAL ----------------
+function verificarLimite() {
+  const total = [...document.querySelectorAll('select[name="qtd"]')]
+    .map(s => parseInt(s.value))
+    .reduce((a,b) => a+b, 0);
+
+  if (total > CESTA_TAMANHO) {
+    this.value = "0";
+    alert(`Limite excedido: máximo de ${CESTA_TAMANHO} unidades no total.`);
   }
 }
 
 carregarProdutos();
 
-// -------- ENVIO DO FORMULÁRIO --------
+// ---------------- ENVIO DO FORMULÁRIO ----------------
 document.getElementById("formItens").addEventListener("submit", async e => {
   e.preventDefault();
-  const selecionados = [...document.querySelectorAll('input[name="itens"]:checked')].map(i => i.value);
-  if (selecionados.length === 0) {
+
+  const selecionados = [...document.querySelectorAll('select[name="qtd"]')]
+    .filter(s => parseInt(s.value) > 0)
+    .map(s => ({ nome: s.dataset.item, quantidade: parseInt(s.value) }));
+
+  const total = selecionados.reduce((acc, i) => acc + i.quantidade, 0);
+  if (total === 0) {
     alert("Escolha ao menos um item.");
     return;
   }
@@ -126,3 +201,4 @@ document.getElementById("formItens").addEventListener("submit", async e => {
 </script>
 </body>
 </html>
+
