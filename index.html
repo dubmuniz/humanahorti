@@ -24,7 +24,6 @@
     input,select,textarea{
       width:100%;padding:12px 14px;border:1px solid #d7dde2;border-radius:12px;background:#fff;font:inherit
     }
-    textarea{min-height:96px;resize:vertical}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
     .full{grid-column:1/-1}
     .btn{
@@ -33,8 +32,8 @@
     }
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .footer{margin-top:12px;font-size:.85rem;color:#4b5563}
-    .priceBox{padding:10px 12px;background:#fff;border:1px dashed #d7dde2;border-radius:10px;font-weight:600}
-    .hidden{display:none}
+    .lgpd-box{margin-top:16px;font-size:.9rem;line-height:1.4;color:#333}
+    .lgpd-box input{margin-right:8px}
   </style>
 </head>
 <body>
@@ -48,27 +47,14 @@
     </header>
 
     <div class="card">
-      <form id="formPagamento" novalidate>
+      <form id="formPagamento" method="post" novalidate>
         <div class="grid">
           <div class="full">
             <label for="cpf">CPF</label>
             <input id="cpf" name="cpf" inputmode="numeric" placeholder="000.000.000-00" required>
             <button type="button" class="btn" style="margin-top:6px;width:100%" onclick="consultarCliente()">Consultar CPF</button>
           </div>
-
-          <div id="dadosCliente" class="hidden full">
-            <label for="nome">Nome completo</label>
-            <input id="nome" name="nome" required>
-            <label for="email">E-mail</label>
-            <input id="email" name="email" type="email" required>
-            <label for="telefone">Telefone</label>
-            <input id="telefone" name="telefone" inputmode="tel" placeholder="(00) 90000-0000">
-            <label for="endereco">Endereço</label>
-            <input id="endereco" name="endereco">
-            <label for="numero">Número</label>
-            <input id="numero" name="numero">
-            <label for="complemento">Complemento</label>
-            <input id="complemento" name="complemento">
+          <div class="full">
             <label for="cesta">Opções de cesta</label>
             <select id="cesta" name="cesta" required>
               <option value="" selected disabled>Selecione</option>
@@ -77,105 +63,59 @@
               <option value="18">Cesta de 18 itens</option>
               <option value="assinatura">Assinatura mensal</option>
             </select>
-            <label>Valor selecionado</label>
-            <div id="valorVisivel" class="priceBox">R$ —</div>
-
-            <input type="hidden" id="valor" name="valor" value="">
-            <input type="hidden" id="idCliente" name="idCliente" value="">
-
-            <div style="margin-top:18px">
-              <button class="btn" id="btnSubmit" type="button" onclick="criarCliente()">Avançar para escolha dos itens</button>
-            </div>
           </div>
         </div>
-        <div class="footer">Ao enviar, um link oficial do Asaas será aberto para pagamento.</div>
+
+        <div class="lgpd-box">
+          <label>
+            <input type="checkbox" id="lgpd" required>
+            Concordo com o uso dos meus dados para geração de cobrança, conforme a Lei Geral de Proteção de Dados (LGPD).
+          </label>
+        </div>
+
+        <div style="margin-top:18px">
+          <button class="btn" id="btnSubmit" type="button" onclick="consultarCliente()">Continuar</button>
+        </div>
+        <div class="footer">
+          A Humana Brasil trata seus dados de forma segura e em conformidade com a LGPD.
+        </div>
       </form>
     </div>
   </div>
 
 <script>
-  const PRICES = { "6": 59.90, "12": 99.90, "18": 139.90, "assinatura": 99.90 };
-  const cesta = document.getElementById('cesta');
-  const valorHidden = document.getElementById('valor');
-  const valorVisivel = document.getElementById('valorVisivel');
+const cpfInput = document.getElementById('cpf');
+const cestaSelect = document.getElementById('cesta');
+const lgpdCheck = document.getElementById('lgpd');
 
-  // Atualizar preço
-  cesta.addEventListener('change', () => {
-    const v = PRICES[cesta.value];
-    if (typeof v === 'number') {
-      valorHidden.value = v.toFixed(2);
-      valorVisivel.textContent = `R$ ${v.toFixed(2).replace('.',',')}`;
+async function consultarCliente() {
+  const cpf = cpfInput.value.replace(/\D/g,'');
+  const cesta = cestaSelect.value;
+
+  if (!cpf) return alert("Digite um CPF válido.");
+  if (!cesta) return alert("Selecione uma cesta.");
+  if (!lgpdCheck.checked) return alert("Você deve concordar com o uso dos dados para prosseguir.");
+
+  try {
+    const resp = await fetch("https://hook.us2.make.com/ltihpmu3xpwf9rkopifyfd3imdt9ahj1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cpf })
+    });
+    const data = await resp.json();
+
+    if (data.idCliente) {
+      // cliente já existe: redireciona direto para escolha
+      window.location.href = `https://dubmuniz.github.io/humanahorti/escolha.html?idCliente=${data.idCliente}&cesta=${cesta}`;
     } else {
-      valorHidden.value = '';
-      valorVisivel.textContent = 'R$ —';
+      // cliente novo: redireciona para cadastro
+      window.location.href = `https://dubmuniz.github.io/humanahorti/cadastro.html?cpf=${cpf}&cesta=${cesta}`;
     }
-  });
-
-  // Consulta cliente via Make → Asaas
-  async function consultarCliente() {
-    const rawCpf = document.getElementById('cpf').value.replace(/\D/g,'');
-    if (!rawCpf) {
-      alert("Digite um CPF válido.");
-      return;
-    }
-    try {
-      const resp = await fetch("https://hook.us2.make.com/ltihpmu3xpwf9rkopifyfd3imdt9ahj1", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cpf: rawCpf })
-      });
-      const data = await resp.json();
-
-      if (data.idCliente) {
-        // cliente já cadastrado → vai direto para página de escolha
-        window.location.href = `escolha.html?idCliente=${encodeURIComponent(data.idCliente)}&cesta=6`;
-      } else {
-        // cliente novo → mostrar formulário completo
-        alert("Cliente não encontrado. Preencha os dados.");
-        document.getElementById("dadosCliente").classList.remove("hidden");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Erro na consulta ao Asaas.");
-    }
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao consultar cliente. Tente novamente mais tarde.");
   }
-
-  // Criar cliente via Make e seguir para escolha
-  async function criarCliente() {
-    const cpf = document.getElementById("cpf").value.replace(/\D/g,"");
-    const nome = document.getElementById("nome").value;
-    const email = document.getElementById("email").value;
-    const telefone = document.getElementById("telefone").value;
-    const endereco = document.getElementById("endereco").value;
-    const numero = document.getElementById("numero").value;
-    const complemento = document.getElementById("complemento").value;
-    const cesta = document.getElementById("cesta").value;
-    const valor = document.getElementById("valor").value;
-
-    if (!nome || !email || !telefone || !cesta) {
-      alert("Preencha todos os campos obrigatórios.");
-      return;
-    }
-
-    try {
-      const resp = await fetch("https://hook.us2.make.com/SEU_WEBHOOK_CRIARCLIENTE", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cpf, nome, email, telefone, endereco, numero, complemento })
-      });
-      const data = await resp.json();
-
-      if (data.idCliente) {
-        window.location.href = `escolha.html?idCliente=${encodeURIComponent(data.idCliente)}&cesta=${encodeURIComponent(cesta)}`;
-      } else {
-        alert("Erro ao criar cliente.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao enviar dados ao servidor.");
-    }
-  }
+}
 </script>
 </body>
 </html>
-
