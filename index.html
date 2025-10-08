@@ -88,6 +88,14 @@ const cpfInput = document.getElementById('cpf');
 const cestaSelect = document.getElementById('cesta');
 const lgpdCheck = document.getElementById('lgpd');
 
+// --- NOVO: pré-selecionar cesta pelo parâmetro da URL ---
+const params = new URLSearchParams(window.location.search);
+const cestaParam = params.get("cesta");
+if (cestaParam) {
+  cestaSelect.value = cestaParam.trim().toLowerCase();
+}
+
+// --- função principal ---
 async function consultarCliente() {
   const cpf = cpfInput.value.replace(/\D/g,'');
   const cesta = cestaSelect.value;
@@ -105,10 +113,10 @@ async function consultarCliente() {
     const data = await resp.json();
 
     if (data.idCliente) {
-      // cliente já existe: redireciona direto para escolha
+      // cliente já existe: vai para escolha
       window.location.href = `https://dubmuniz.github.io/humanahorti/escolha.html?idCliente=${data.idCliente}&cesta=${cesta}`;
     } else {
-      // cliente novo: redireciona para cadastro
+      // cliente novo: vai para cadastro
       window.location.href = `https://dubmuniz.github.io/humanahorti/cadastro.html?cpf=${cpf}&cesta=${cesta}`;
     }
   } catch (err) {
@@ -117,5 +125,6 @@ async function consultarCliente() {
   }
 }
 </script>
+
 </body>
 </html>
