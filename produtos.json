@@ -1,9 +1,14 @@
 [
-  {"nome": "Banana", "img": "https://icons.iconarchive.com/icons/fi3ur/fruitsalad/48/banana-icon.png"},
-  {"nome": "Maçã", "img": "https://icons.iconarchive.com/icons/bingxueling/fruit-vegetables/48/apple-red-icon.png"},
-  {"nome": "Cenoura", "img": "https://icons.iconarchive.com/icons/google/noto-emoji-food-drink/48/32361-carrot-icon.png"},
-  {"nome": "Tomate", "img": "https://icons.iconarchive.com/icons/bingxueling/fruit-vegetables/48/tomato-icon.png"},
-  {"nome": "Abacate", "img": "https://icons.iconarchive.com/icons/iconarchive/realistic-illustration-fruit/48/Avocado-Illustration-icon.png"},
-  {"nome": "Alface", "img": "https://icons.iconarchive.com/icons/pixture/vegetable/32/Lettuce-icon.png"},
-  {"nome": "Batata", "img": "https://icons.iconarchive.com/icons/google/noto-emoji-food-drink/48/32360-potato-icon.png"}
+  "Banana prata",
+  "Banana d’água",
+  "Cenoura",
+  "Beterraba",
+  "Alface crespa",
+  "Tomate salada",
+  "Batata inglesa",
+  "Manga tommy",
+  "Limão tahiti",
+  "Cebola",
+  "Coentro",
+  "Laranja pêra"
 ]
