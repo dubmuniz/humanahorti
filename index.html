@@ -145,7 +145,7 @@ async function consultarCliente() {
       // cliente existente
       window.location.href = `https://dubmuniz.github.io/humanahorti/escolha.html?idCliente=${data.idCliente}&cesta=${cesta}`;
     } else {
-      // cliente novo → abre cadastro
+      // cliente novo → abre cadastro com fade-in
       abrirFormularioCadastro(cpf, cesta);
     }
   } catch (err) {
@@ -154,7 +154,7 @@ async function consultarCliente() {
   }
 }
 
-// --- formulário de cadastro dinâmico ---
+// --- formulário de cadastro dinâmico com fade-in ---
 function abrirFormularioCadastro(cpf, cesta) {
   if (document.getElementById("formCadastro")) return;
 
@@ -164,7 +164,16 @@ function abrirFormularioCadastro(cpf, cesta) {
     <h3 style="margin-top: 20px; text-align: center;">Cadastro rápido</h3>
     <p style="text-align: center;">Preencha seus dados para finalizar o pedido.</p>
 
-    <form id="cadastroForm" style="display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin: 0 auto;">
+    <form id="cadastroForm" style="
+      display: flex; 
+      flex-direction: column; 
+      gap: 10px; 
+      max-width: 400px; 
+      margin: 0 auto; 
+      opacity: 0; 
+      transform: translateY(10px); 
+      transition: all 0.4s ease;">
+      
       <input type="text" id="nome" placeholder="Nome completo" required>
       <input type="text" id="cpfForm" placeholder="CPF" value="${cpf}" readonly>
       <input type="text" id="endereco" placeholder="Endereço" required>
@@ -172,18 +181,27 @@ function abrirFormularioCadastro(cpf, cesta) {
       <input type="text" id="complemento" placeholder="Complemento">
       <input type="text" id="cep" placeholder="CEP" required>
 
-      <label style="font-size: 16px; display: flex; align-items: center; gap: 8px;">
-        <input type="checkbox" id="lgpdCadastro" required style="transform: scale(1.3);">
-        Autorizo o uso dos meus dados conforme a Lei Geral de Proteção de Dados (LGPD).
-      </label>
-
-      <button type="submit" style="background-color: #2a8f2a; color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+      <button type="submit" style="
+        background-color: #2a8f2a; 
+        color: white; 
+        padding: 12px; 
+        border: none; 
+        border-radius: 6px; 
+        cursor: pointer; 
+        font-size: 16px;">
         Finalizar cadastro
       </button>
     </form>
   `;
 
   botaoCPF.insertAdjacentElement("afterend", container);
+
+  // animação de fade-in
+  setTimeout(() => {
+    const form = document.getElementById("cadastroForm");
+    form.style.opacity = "1";
+    form.style.transform = "translateY(0)";
+  }, 50);
 
   const form = document.getElementById("cadastroForm");
   form.addEventListener("submit", async e => {
@@ -220,6 +238,7 @@ function abrirFormularioCadastro(cpf, cesta) {
   });
 }
 </script>
+
 
 
 </body>
