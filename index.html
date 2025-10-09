@@ -21,7 +21,7 @@
     h1{margin:0;font-weight:800;font-size:1.4rem;color:var(--verde)}
     p.sub{margin:.25rem 0 0;font-weight:300}
     label{display:block;font-weight:600;margin:14px 0 6px}
-    input,select,textarea{
+    input,select{
       width:100%;padding:12px 14px;border:1px solid #d7dde2;border-radius:12px;background:#fff;font:inherit
     }
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -75,9 +75,6 @@
           </label>
         </div>
 
-        <div style="margin-top:18px">
-          <button class="btn" id="btnSubmit" type="button" onclick="consultarCliente()">Continuar</button>
-        </div>
         <div class="footer">
           A Humana Brasil trata seus dados de forma segura e em conformidade com a LGPD.
         </div>
@@ -90,7 +87,7 @@ const cpfInput = document.getElementById('cpf');
 const cestaSelect = document.getElementById('cesta');
 const lgpdCheck = document.getElementById('lgpd');
 const infoCesta = document.getElementById('infoCesta');
-const botaoCPF = document.querySelector('button'); // botão de consulta
+const botaoCPF = document.querySelector('button');
 
 // --- textos das cestas ---
 const INFO = {
@@ -106,9 +103,9 @@ let cestaParam = params.get("cesta");
 
 if (cestaParam) {
   cestaParam = cestaParam.trim().toLowerCase();
-  if (["06", "cesta6"].includes(cestaParam)) cestaParam = "6";
-  if (["012", "cesta12"].includes(cestaParam)) cestaParam = "12";
-  if (["018", "cesta18"].includes(cestaParam)) cestaParam = "18";
+  if (["06","cesta6"].includes(cestaParam)) cestaParam = "6";
+  if (["012","cesta12"].includes(cestaParam)) cestaParam = "12";
+  if (["018","cesta18"].includes(cestaParam)) cestaParam = "18";
   if (cestaParam.includes("assinatura")) cestaParam = "assinatura";
   cestaSelect.value = cestaParam;
   atualizarInfoCesta(cestaParam);
@@ -116,130 +113,118 @@ if (cestaParam) {
 
 cestaSelect.addEventListener("change", e => atualizarInfoCesta(e.target.value));
 
-function atualizarInfoCesta(valor) {
-  if (INFO[valor]) {
-    infoCesta.textContent = `${INFO[valor].texto} — ${INFO[valor].preco}`;
-  } else {
-    infoCesta.textContent = "";
-  }
+function atualizarInfoCesta(valor){
+  if (INFO[valor]) infoCesta.textContent = `${INFO[valor].texto} — ${INFO[valor].preco}`;
+  else infoCesta.textContent = "";
 }
 
 // --- consulta no Make ---
-async function consultarCliente() {
+async function consultarCliente(){
   const cpf = cpfInput.value.replace(/\D/g,'');
   const cesta = cestaSelect.value;
-
   if (!cpf) return alert("Digite um CPF válido.");
   if (!cesta) return alert("Selecione uma cesta.");
   if (!lgpdCheck.checked) return alert("Você deve concordar com o uso dos dados para prosseguir.");
 
   try {
     const resp = await fetch("https://hook.us2.make.com/ltihpmu3xpwf9rkopifyfd3imdt9ahj1", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cpf })
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ cpf })
     });
     const data = await resp.json();
 
-    if (data.idCliente) {
-      // cliente existente
+    if (data.idCliente){
       window.location.href = `https://dubmuniz.github.io/humanahorti/escolha.html?idCliente=${data.idCliente}&cesta=${cesta}`;
     } else {
-      // cliente novo → abre cadastro com fade-in
       abrirFormularioCadastro(cpf, cesta);
     }
-  } catch (err) {
+  } catch(err){
     console.error(err);
     alert("Erro ao consultar cliente. Tente novamente mais tarde.");
   }
 }
 
-// --- formulário de cadastro dinâmico com fade-in ---
-function abrirFormularioCadastro(cpf, cesta) {
+// --- formulário de cadastro dinâmico ---
+function abrirFormularioCadastro(cpf, cesta){
   if (document.getElementById("formCadastro")) return;
 
   const container = document.createElement("div");
   container.id = "formCadastro";
   container.innerHTML = `
-    <h3 style="margin-top: 20px; text-align: center;">Cadastro rápido</h3>
-    <p style="text-align: center;">Preencha seus dados para finalizar o pedido.</p>
+    <h3 style="margin-top:20px;text-align:center;">Cadastro rápido</h3>
+    <p style="text-align:center;">Preencha seus dados para finalizar o pedido.</p>
 
     <form id="cadastroForm" style="
-      display: flex; 
-      flex-direction: column; 
-      gap: 10px; 
-      max-width: 400px; 
-      margin: 0 auto; 
-      opacity: 0; 
-      transform: translateY(10px); 
-      transition: all 0.4s ease;">
+      display:flex;flex-direction:column;gap:10px;
+      max-width:400px;margin:0 auto;
+      opacity:0;transform:translateY(10px);
+      transition:all 0.4s ease;">
       
       <input type="text" id="nome" placeholder="Nome completo" required>
       <input type="text" id="cpfForm" placeholder="CPF" value="${cpf}" readonly>
+      <input type="email" id="email" placeholder="E-mail" required>
+      <input type="tel" id="telefone" placeholder="Telefone" required>
       <input type="text" id="endereco" placeholder="Endereço" required>
       <input type="text" id="numero" placeholder="Número" required>
       <input type="text" id="complemento" placeholder="Complemento">
       <input type="text" id="cep" placeholder="CEP" required>
 
+      <label style="font-size:0.95rem;line-height:1.4;margin-top:8px;">
+        <input type="checkbox" id="lgpdCadastro" required style="transform:scale(1.3);margin-right:8px;">
+        Autorizo o uso dos meus dados conforme a Lei Geral de Proteção de Dados (LGPD).
+      </label>
+
       <button type="submit" style="
-        background-color: #2a8f2a; 
-        color: white; 
-        padding: 12px; 
-        border: none; 
-        border-radius: 6px; 
-        cursor: pointer; 
-        font-size: 16px;">
+        background-color:#2a8f2a;color:white;
+        padding:12px;border:none;border-radius:6px;
+        cursor:pointer;font-size:16px;">
         Finalizar cadastro
       </button>
     </form>
   `;
-
   botaoCPF.insertAdjacentElement("afterend", container);
 
-  // animação de fade-in
-  setTimeout(() => {
-    const form = document.getElementById("cadastroForm");
-    form.style.opacity = "1";
-    form.style.transform = "translateY(0)";
-  }, 50);
+  setTimeout(()=>{
+    const form=document.getElementById("cadastroForm");
+    form.style.opacity="1";
+    form.style.transform="translateY(0)";
+  },50);
 
-  const form = document.getElementById("cadastroForm");
-  form.addEventListener("submit", async e => {
+  const form=document.getElementById("cadastroForm");
+  form.addEventListener("submit", async e=>{
     e.preventDefault();
-
-    const payload = {
+    const payload={
       cpf,
-      nome: document.getElementById("nome").value,
-      endereco: document.getElementById("endereco").value,
-      numero: document.getElementById("numero").value,
-      complemento: document.getElementById("complemento").value,
-      cep: document.getElementById("cep").value
+      nome:document.getElementById("nome").value,
+      email:document.getElementById("email").value,
+      telefone:document.getElementById("telefone").value,
+      endereco:document.getElementById("endereco").value,
+      numero:document.getElementById("numero").value,
+      complemento:document.getElementById("complemento").value,
+      cep:document.getElementById("cep").value
     };
 
-    try {
-      const resp = await fetch("https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+    try{
+      const resp=await fetch("https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify(payload)
       });
+      const data=await resp.json();
 
-      const data = await resp.json();
-
-      if (data.idCliente) {
+      if(data.idCliente){
         alert("Cadastro realizado com sucesso!");
-        window.location.href = `https://dubmuniz.github.io/humanahorti/escolha.html?idCliente=${data.idCliente}&cesta=${cesta}`;
-      } else {
+        window.location.href=`https://dubmuniz.github.io/humanahorti/escolha.html?idCliente=${data.idCliente}&cesta=${cesta}`;
+      }else{
         alert("Erro ao cadastrar. Verifique os dados e tente novamente.");
       }
-    } catch (err) {
+    }catch(err){
       console.error(err);
       alert("Erro ao enviar cadastro.");
     }
   });
 }
 </script>
-
-
-
 </body>
 </html>
