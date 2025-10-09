@@ -90,8 +90,9 @@ const cpfInput = document.getElementById('cpf');
 const cestaSelect = document.getElementById('cesta');
 const lgpdCheck = document.getElementById('lgpd');
 const infoCesta = document.getElementById('infoCesta');
+const botaoCPF = document.querySelector('button'); // botão de consulta
 
-// --- valores e textos das cestas ---
+// --- textos das cestas ---
 const INFO = {
   "6": {texto: "Cesta de 6 itens", preco: "R$ 59,90"},
   "12": {texto: "Cesta de 12 itens", preco: "R$ 99,90"},
@@ -99,18 +100,16 @@ const INFO = {
   "assinatura": {texto: "Assinatura mensal", preco: "R$ 99,90"}
 };
 
-// --- pré-selecionar cesta pelo parâmetro da URL ---
+// --- pré-seleção por URL ---
 const params = new URLSearchParams(window.location.search);
 let cestaParam = params.get("cesta");
 
 if (cestaParam) {
   cestaParam = cestaParam.trim().toLowerCase();
-
-  if (cestaParam === "06" || cestaParam === "cesta6") cestaParam = "6";
-  if (cestaParam === "012" || cestaParam === "cesta12") cestaParam = "12";
-  if (cestaParam === "018" || cestaParam === "cesta18") cestaParam = "18";
+  if (["06", "cesta6"].includes(cestaParam)) cestaParam = "6";
+  if (["012", "cesta12"].includes(cestaParam)) cestaParam = "12";
+  if (["018", "cesta18"].includes(cestaParam)) cestaParam = "18";
   if (cestaParam.includes("assinatura")) cestaParam = "assinatura";
-
   cestaSelect.value = cestaParam;
   atualizarInfoCesta(cestaParam);
 }
@@ -125,7 +124,7 @@ function atualizarInfoCesta(valor) {
   }
 }
 
-// --- consulta cliente no Make ---
+// --- consulta no Make ---
 async function consultarCliente() {
   const cpf = cpfInput.value.replace(/\D/g,'');
   const cesta = cestaSelect.value;
@@ -143,11 +142,11 @@ async function consultarCliente() {
     const data = await resp.json();
 
     if (data.idCliente) {
-      // cliente encontrado
+      // cliente existente
       window.location.href = `https://dubmuniz.github.io/humanahorti/escolha.html?idCliente=${data.idCliente}&cesta=${cesta}`;
     } else {
-      // cliente não encontrado -> mostrar formulário
-      mostrarFormularioCadastro(cpf, cesta);
+      // cliente novo → abre cadastro
+      abrirFormularioCadastro(cpf, cesta);
     }
   } catch (err) {
     console.error(err);
@@ -155,44 +154,48 @@ async function consultarCliente() {
   }
 }
 
-// --- cria formulário dinamicamente ---
-function mostrarFormularioCadastro(cpf, cesta) {
-  // evita duplicação
+// --- formulário de cadastro dinâmico ---
+function abrirFormularioCadastro(cpf, cesta) {
   if (document.getElementById("formCadastro")) return;
 
-  const form = document.createElement("form");
-  form.id = "formCadastro";
-  form.innerHTML = `
-    <h3>Cadastro rápido</h3>
-    <p>Não encontramos seu CPF. Preencha os dados abaixo para continuar:</p>
-    <label>Nome completo</label>
-    <input type="text" id="nome" required>
+  const container = document.createElement("div");
+  container.id = "formCadastro";
+  container.innerHTML = `
+    <h3 style="margin-top: 20px; text-align: center;">Cadastro rápido</h3>
+    <p style="text-align: center;">Preencha seus dados para finalizar o pedido.</p>
 
-    <label>E-mail</label>
-    <input type="email" id="email" required>
+    <form id="cadastroForm" style="display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin: 0 auto;">
+      <input type="text" id="nome" placeholder="Nome completo" required>
+      <input type="text" id="cpfForm" placeholder="CPF" value="${cpf}" readonly>
+      <input type="text" id="endereco" placeholder="Endereço" required>
+      <input type="text" id="numero" placeholder="Número" required>
+      <input type="text" id="complemento" placeholder="Complemento">
+      <input type="text" id="cep" placeholder="CEP" required>
 
-    <label>Telefone</label>
-    <input type="tel" id="telefone" required>
+      <label style="font-size: 16px; display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="lgpdCadastro" required style="transform: scale(1.3);">
+        Autorizo o uso dos meus dados conforme a Lei Geral de Proteção de Dados (LGPD).
+      </label>
 
-    <button type="submit">Finalizar cadastro</button>
+      <button type="submit" style="background-color: #2a8f2a; color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+        Finalizar cadastro
+      </button>
+    </form>
   `;
 
-  form.style.marginTop = "20px";
-  form.style.padding = "15px";
-  form.style.border = "1px solid #ccc";
-  form.style.borderRadius = "8px";
-  form.style.background = "#f9f9f9";
+  botaoCPF.insertAdjacentElement("afterend", container);
 
-  document.body.appendChild(form);
-
+  const form = document.getElementById("cadastroForm");
   form.addEventListener("submit", async e => {
     e.preventDefault();
 
     const payload = {
       cpf,
       nome: document.getElementById("nome").value,
-      email: document.getElementById("email").value,
-      telefone: document.getElementById("telefone").value
+      endereco: document.getElementById("endereco").value,
+      numero: document.getElementById("numero").value,
+      complemento: document.getElementById("complemento").value,
+      cep: document.getElementById("cep").value
     };
 
     try {
@@ -201,6 +204,7 @@ function mostrarFormularioCadastro(cpf, cesta) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+
       const data = await resp.json();
 
       if (data.idCliente) {
@@ -216,6 +220,7 @@ function mostrarFormularioCadastro(cpf, cesta) {
   });
 }
 </script>
+
 
 </body>
 </html>
