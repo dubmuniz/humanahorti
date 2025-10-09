@@ -106,7 +106,6 @@ let cestaParam = params.get("cesta");
 if (cestaParam) {
   cestaParam = cestaParam.trim().toLowerCase();
 
-  // normaliza variações
   if (cestaParam === "06" || cestaParam === "cesta6") cestaParam = "6";
   if (cestaParam === "012" || cestaParam === "cesta12") cestaParam = "12";
   if (cestaParam === "018" || cestaParam === "cesta18") cestaParam = "18";
@@ -116,10 +115,7 @@ if (cestaParam) {
   atualizarInfoCesta(cestaParam);
 }
 
-// --- atualiza descrição ao mudar cesta manualmente ---
-cestaSelect.addEventListener("change", e => {
-  atualizarInfoCesta(e.target.value);
-});
+cestaSelect.addEventListener("change", e => atualizarInfoCesta(e.target.value));
 
 function atualizarInfoCesta(valor) {
   if (INFO[valor]) {
@@ -129,7 +125,7 @@ function atualizarInfoCesta(valor) {
   }
 }
 
-// --- consulta no Make ---
+// --- consulta cliente no Make ---
 async function consultarCliente() {
   const cpf = cpfInput.value.replace(/\D/g,'');
   const cesta = cestaSelect.value;
@@ -147,17 +143,79 @@ async function consultarCliente() {
     const data = await resp.json();
 
     if (data.idCliente) {
-      // cliente já existe: vai para escolha
+      // cliente encontrado
       window.location.href = `https://dubmuniz.github.io/humanahorti/escolha.html?idCliente=${data.idCliente}&cesta=${cesta}`;
     } else {
-      // cliente novo: vai para cadastro
-      window.location.href = `https://dubmuniz.github.io/humanahorti/cadastro.html?cpf=${cpf}&cesta=${cesta}`;
+      // cliente não encontrado -> mostrar formulário
+      mostrarFormularioCadastro(cpf, cesta);
     }
   } catch (err) {
     console.error(err);
     alert("Erro ao consultar cliente. Tente novamente mais tarde.");
   }
 }
+
+// --- cria formulário dinamicamente ---
+function mostrarFormularioCadastro(cpf, cesta) {
+  // evita duplicação
+  if (document.getElementById("formCadastro")) return;
+
+  const form = document.createElement("form");
+  form.id = "formCadastro";
+  form.innerHTML = `
+    <h3>Cadastro rápido</h3>
+    <p>Não encontramos seu CPF. Preencha os dados abaixo para continuar:</p>
+    <label>Nome completo</label>
+    <input type="text" id="nome" required>
+
+    <label>E-mail</label>
+    <input type="email" id="email" required>
+
+    <label>Telefone</label>
+    <input type="tel" id="telefone" required>
+
+    <button type="submit">Finalizar cadastro</button>
+  `;
+
+  form.style.marginTop = "20px";
+  form.style.padding = "15px";
+  form.style.border = "1px solid #ccc";
+  form.style.borderRadius = "8px";
+  form.style.background = "#f9f9f9";
+
+  document.body.appendChild(form);
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const payload = {
+      cpf,
+      nome: document.getElementById("nome").value,
+      email: document.getElementById("email").value,
+      telefone: document.getElementById("telefone").value
+    };
+
+    try {
+      const resp = await fetch("https://hook.us2.make.com/ltihpmu3xpwf9rkopifyfd3imdt9ahj1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+
+      if (data.idCliente) {
+        alert("Cadastro realizado com sucesso!");
+        window.location.href = `https://dubmuniz.github.io/humanahorti/escolha.html?idCliente=${data.idCliente}&cesta=${cesta}`;
+      } else {
+        alert("Erro ao cadastrar. Verifique os dados e tente novamente.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao enviar cadastro.");
+    }
+  });
+}
 </script>
+
 </body>
 </html>
