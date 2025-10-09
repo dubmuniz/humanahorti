@@ -13,7 +13,7 @@
 }
 body {
   margin:0;
-  font-family:Montserrat;
+  font-family:Montserrat,sans-serif;
   background:#fff;
   color:#1a1a1a;
 }
@@ -71,6 +71,14 @@ select {
   cursor:pointer;
   width:100%;
   margin-top:16px;
+  transition:background .2s;
+}
+.btn:hover:not(:disabled) {
+  background:#e56e15;
+}
+.btn:disabled {
+  opacity:.7;
+  cursor:not-allowed;
 }
 .footer {
   margin-top:16px;
@@ -94,7 +102,10 @@ select {
     <div id="listaItens" class="grid"></div>
     <button class="btn" type="submit">Gerar pagamento</button>
   </form>
-  <p class="footer">Ao confirmar, você será redirecionado ao link oficial do Asaas para pagamento seguro.</p>
+
+  <p class="footer">
+    Ao confirmar, você será redirecionado ao link oficial do Asaas para pagamento seguro.
+  </p>
 </div>
 
 <script>
@@ -116,8 +127,6 @@ const info = document.getElementById("infoCesta");
 info.textContent = `Escolha até ${CESTA_TAMANHO} unidades no total (máx. 3 por item).`;
 
 // ---------------- LISTA DE PRODUTOS ----------------
-// O arquivo produtos.json deve conter apenas um array de nomes, assim:
-// ["Banana prata", "Cenoura", "Tomate salada"]
 async function carregarProdutos() {
   try {
     const r = await fetch("https://dubmuniz.github.io/humanahorti/produtos.json");
@@ -162,8 +171,13 @@ function verificarLimite() {
 carregarProdutos();
 
 // ---------------- ENVIO DO FORMULÁRIO ----------------
-document.getElementById("formItens").addEventListener("submit", async e => {
+const form = document.getElementById("formItens");
+form.addEventListener("submit", async e => {
   e.preventDefault();
+
+  const botao = form.querySelector(".btn");
+  botao.disabled = true;
+  botao.textContent = "Gerando pagamento...";
 
   const selecionados = [...document.querySelectorAll('select[name="qtd"]')]
     .filter(s => parseInt(s.value) > 0)
@@ -172,6 +186,8 @@ document.getElementById("formItens").addEventListener("submit", async e => {
   const total = selecionados.reduce((acc, i) => acc + i.quantidade, 0);
   if (total === 0) {
     alert("Escolha ao menos um item.");
+    botao.disabled = false;
+    botao.textContent = "Gerar pagamento";
     return;
   }
 
@@ -188,17 +204,24 @@ document.getElementById("formItens").addEventListener("submit", async e => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
+
     const data = await resp.json();
-    if (data.paymentLink) {
+
+    if (data && data.paymentLink) {
       window.location.href = data.paymentLink;
     } else {
-      alert("Erro ao gerar link de pagamento.");
+      console.error("Resposta inesperada:", data);
+      alert("Erro ao gerar link de pagamento. Tente novamente.");
+      botao.disabled = false;
+      botao.textContent = "Gerar pagamento";
     }
   } catch (e) {
+    console.error(e);
     alert("Erro de conexão com o servidor.");
+    botao.disabled = false;
+    botao.textContent = "Gerar pagamento";
   }
 });
 </script>
 </body>
 </html>
-
