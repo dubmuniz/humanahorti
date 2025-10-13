@@ -6,92 +6,23 @@
 <title>Humana Brasil • Escolha dos Itens</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --verde:#37954a;
-  --laranja:#f07e2d;
-  --cinza:#f5f7f8;
-}
+:root { --verde:#37954a; --laranja:#f07e2d; --cinza:#f5f7f8; }
 *{box-sizing:border-box}
-body {
-  margin:0;
-  font-family:Montserrat,sans-serif;
-  background:#fff;
-  color:#1a1a1a;
-}
-.wrap {
-  max-width:720px;
-  margin:24px auto;
-  padding:24px;
-}
-header {
-  display:flex;
-  align-items:center;
-  gap:16px;
-  margin-bottom:16px;
-}
-header img { height:56px; width:auto; }
-h1 { margin:0; font-weight:800; font-size:1.4rem; color:var(--verde); }
-p { margin:.25rem 0 0; }
-.grid {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-}
-.item {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:10px 12px;
-  background:var(--cinza);
-  border-radius:10px;
-}
-.badge {
-  font-size:.8rem;
-  color:#64748b;
-  margin-left:8px;
-}
-select {
-  padding:6px;
-  border-radius:8px;
-  border:1px solid #ccc;
-  font-family:inherit;
-  font-size:.95rem;
-  width:64px;
-  text-align:center;
-}
-textarea{
-  width:100%;
-  min-height:96px;
-  resize:vertical;
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid #d1d5db;
-  font-family:inherit;
-  font-size:1rem;
-  margin-top:8px;
-}
+body{margin:0;font-family:Montserrat,sans-serif;background:#fff;color:#1a1a1a}
+.wrap{max-width:720px;margin:24px auto;padding:24px}
+header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+header img{height:56px;width:auto}
+h1{margin:0;font-weight:800;font-size:1.4rem;color:var(--verde)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--cinza);border-radius:10px}
+.badge{font-size:.8rem;color:#64748b;margin-left:8px}
+select{padding:6px;border-radius:8px;border:1px solid #ccc;font-family:inherit;font-size:.95rem;width:64px;text-align:center}
+textarea{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;font-family:inherit;font-size:1rem;margin-top:8px}
 label.obs{display:block;margin-top:16px;font-weight:600}
-.btn {
-  appearance:none;
-  border:0;
-  border-radius:14px;
-  padding:14px 18px;
-  background:var(--laranja);
-  color:#fff;
-  font-weight:800;
-  cursor:pointer;
-  width:100%;
-  margin-top:16px;
-  transition:background .2s;
-}
-.btn:hover:not(:disabled) { background:#e56e15; }
-.btn:disabled { opacity:.7; cursor:not-allowed; }
-.footer {
-  margin-top:16px;
-  font-size:.85rem;
-  color:#4b5563;
-  text-align:center;
-}
+.btn{appearance:none;border:0;border-radius:14px;padding:14px 18px;background:var(--laranja);color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:16px;transition:background .2s}
+.btn:hover:not(:disabled){background:#e56e15}
+.btn:disabled{opacity:.7;cursor:not-allowed}
+.footer{margin-top:16px;font-size:.85rem;color:#4b5563;text-align:center}
 </style>
 </head>
 <body>
@@ -108,13 +39,13 @@ label.obs{display:block;margin-top:16px;font-weight:600}
     <div id="listaItens" class="grid"></div>
 
     <label for="obs" class="obs">Observações do pedido</label>
-    <textarea id="obs" placeholder="Exemplo: trocar alface por rúcula se não tiver. Entregar após 18h."></textarea>
+    <textarea id="obs" placeholder="Ex.: trocar alface por rúcula se não tiver. Entregar após 18h."></textarea>
 
     <button class="btn" type="submit">Gerar pagamento</button>
   </form>
 
   <p class="footer">
-    Após confirmar você será redirecionado ao link oficial do Asaas para pagamento seguro.
+    Após confirmar você será redirecionado ao link oficial do Asaas para pagamento.
   </p>
 </div>
 
@@ -124,10 +55,9 @@ const params = new URLSearchParams(window.location.search);
 const idCliente = params.get("idCliente");
 const tipoCesta = params.get("cesta");
 
-// ---------------- CONFIGURAÇÃO DAS CESTAS ----------------
+// ---------------- CONFIG CESTAS ----------------
 let CESTA_TAMANHO = 6;
 let VALOR_CESTA = 59.90;
-
 if (tipoCesta === "12") { CESTA_TAMANHO = 12; VALOR_CESTA = 99.90; }
 if (tipoCesta === "18") { CESTA_TAMANHO = 18; VALOR_CESTA = 139.90; }
 if (tipoCesta === "assinatura") { CESTA_TAMANHO = 12; VALOR_CESTA = 99.90; }
@@ -136,32 +66,44 @@ const lista = document.getElementById("listaItens");
 const info = document.getElementById("infoCesta");
 info.textContent = `Escolha até ${CESTA_TAMANHO} unidades no total, máximo de 3 por item.`;
 
-// ---------------- ENDPOINTS (Make.com) ----------------
-const URL_LISTAR_ESTOQUE = "https://hook.us2.make.com/SEU_WEBHOOK_LISTAR_ESTOQUE"; // GET retorna [{nome:"Alface", estoque:12}, ...]
-const URL_GERAR_COBRANCA = "https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a";
+// ---------------- ENDPOINTS ----------------
+// LISTAR_ESTOQUE deve ser um webhook do Make configurado para aceitar POST e responder JSON no formato:
+// [ { "nome":"Alface", "estoque":12 }, ... ]
+const URL_LISTAR_ESTOQUE = "https://hook.us2.make.com/SEU_WEBHOOK_LISTAR_ESTOQUE";
+const URL_GERAR_COBRANCA  = "https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a";
 
-// ---------------- LISTA DE PRODUTOS COM ESTOQUE ----------------
+// ---------------- LISTA DE PRODUTOS ----------------
 async function carregarProdutos() {
   try {
-    const r = await fetch(URL_LISTAR_ESTOQUE, { method: "GET" });
-    if (!r.ok) throw new Error("Falha ao carregar estoque.");
-    /** esperado: [{nome, estoque}] */
-    const estoque = await r.json();
+    // Make custom webhook padrão espera POST. Envie body vazio.
+    const r = await fetch(`${URL_LISTAR_ESTOQUE}?_=${Date.now()}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    let data = await r.json();
 
-    const disponiveis = estoque.filter(p => Number(p.estoque) > 0);
+    // Aceita {data:[...]} ou [...]
+    const rows = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+    if (!rows.length) throw new Error("Resposta vazia");
 
-    if (disponiveis.length === 0) {
-      lista.innerHTML = `<div class="full" style="grid-column:1/-1;color:#6b7280">Sem itens disponíveis no momento</div>`;
+    const disponiveis = rows
+      .map(p => ({ nome: p.nome ?? p.produto ?? "", estoque: Number(p.estoque ?? p.estoque_atual ?? 0) }))
+      .filter(p => p.nome && p.estoque > 0);
+
+    if (!disponiveis.length) {
+      lista.innerHTML = `<div style="grid-column:1/-1;color:#6b7280">Sem itens disponíveis no momento</div>`;
       return;
     }
 
     disponiveis.forEach(p => {
-      const maxItem = Math.min(3, Number(p.estoque) || 0);
+      const maxItem = Math.min(3, p.estoque);
       const div = document.createElement("div");
       div.className = "item";
       const opts = Array.from({length: maxItem+1}, (_,i)=>`<option value="${i}">${i}</option>`).join("");
       div.innerHTML = `
-        <span>${p.nome}<span class="badge"> ${p.estoque} em estoque</span></span>
+        <span>${p.nome}<span class="badge">${p.estoque} em estoque</span></span>
         <select name="qtd" data-item="${p.nome}">
           ${opts}
         </select>`;
@@ -172,17 +114,16 @@ async function carregarProdutos() {
       sel.addEventListener('change', verificarLimite);
     });
   } catch (err) {
-    console.error(err);
-    alert("Erro ao carregar lista de produtos.");
+    console.error("Falha ao listar estoque:", err);
+    alert("Erro ao carregar lista de produtos. Verifique o webhook de estoque no Make.");
   }
 }
 
-// ---------------- CONTROLE DE LIMITE TOTAL ----------------
+// ---------------- LIMITE TOTAL ----------------
 function verificarLimite() {
   const total = [...document.querySelectorAll('select[name="qtd"]')]
-    .map(s => parseInt(s.value))
+    .map(s => parseInt(s.value||"0",10))
     .reduce((a,b) => a+b, 0);
-
   if (total > CESTA_TAMANHO) {
     this.value = "0";
     alert(`Limite excedido. Máximo de ${CESTA_TAMANHO} unidades no total.`);
@@ -201,8 +142,8 @@ form.addEventListener("submit", async e => {
   botao.textContent = "Gerando pagamento...";
 
   const selecionados = [...document.querySelectorAll('select[name="qtd"]')]
-    .filter(s => parseInt(s.value) > 0)
-    .map(s => ({ nome: s.dataset.item, quantidade: parseInt(s.value) }));
+    .filter(s => parseInt(s.value,10) > 0)
+    .map(s => ({ nome: s.dataset.item, quantidade: parseInt(s.value,10) }));
 
   const total = selecionados.reduce((acc, i) => acc + i.quantidade, 0);
   if (total === 0) {
@@ -228,14 +169,13 @@ form.addEventListener("submit", async e => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-
     const data = await resp.json();
 
     if (data && data.paymentLink) {
       window.location.href = data.paymentLink;
     } else {
       console.error("Resposta inesperada:", data);
-      alert("Erro ao gerar link de pagamento. Tente novamente.");
+      alert("Erro ao gerar link de pagamento.");
       botao.disabled = false;
       botao.textContent = "Gerar pagamento";
     }
