@@ -11,6 +11,7 @@
   --laranja:#f07e2d;
   --cinza:#f5f7f8;
 }
+*{box-sizing:border-box}
 body {
   margin:0;
   font-family:Montserrat,sans-serif;
@@ -28,16 +29,9 @@ header {
   gap:16px;
   margin-bottom:16px;
 }
-header img {
-  height:56px;
-  width:auto;
-}
-h1 {
-  margin:0;
-  font-weight:800;
-  font-size:1.4rem;
-  color:var(--verde);
-}
+header img { height:56px; width:auto; }
+h1 { margin:0; font-weight:800; font-size:1.4rem; color:var(--verde); }
+p { margin:.25rem 0 0; }
 .grid {
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -47,9 +41,14 @@ h1 {
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:8px 10px;
+  padding:10px 12px;
   background:var(--cinza);
   border-radius:10px;
+}
+.badge {
+  font-size:.8rem;
+  color:#64748b;
+  margin-left:8px;
 }
 select {
   padding:6px;
@@ -57,9 +56,21 @@ select {
   border:1px solid #ccc;
   font-family:inherit;
   font-size:.95rem;
-  width:60px;
+  width:64px;
   text-align:center;
 }
+textarea{
+  width:100%;
+  min-height:96px;
+  resize:vertical;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid #d1d5db;
+  font-family:inherit;
+  font-size:1rem;
+  margin-top:8px;
+}
+label.obs{display:block;margin-top:16px;font-weight:600}
 .btn {
   appearance:none;
   border:0;
@@ -73,13 +84,8 @@ select {
   margin-top:16px;
   transition:background .2s;
 }
-.btn:hover:not(:disabled) {
-  background:#e56e15;
-}
-.btn:disabled {
-  opacity:.7;
-  cursor:not-allowed;
-}
+.btn:hover:not(:disabled) { background:#e56e15; }
+.btn:disabled { opacity:.7; cursor:not-allowed; }
 .footer {
   margin-top:16px;
   font-size:.85rem;
@@ -100,11 +106,15 @@ select {
 
   <form id="formItens">
     <div id="listaItens" class="grid"></div>
+
+    <label for="obs" class="obs">Observações do pedido</label>
+    <textarea id="obs" placeholder="Exemplo: trocar alface por rúcula se não tiver. Entregar após 18h."></textarea>
+
     <button class="btn" type="submit">Gerar pagamento</button>
   </form>
 
   <p class="footer">
-    Ao confirmar, você será redirecionado ao link oficial do Asaas para pagamento seguro.
+    Após confirmar você será redirecionado ao link oficial do Asaas para pagamento seguro.
   </p>
 </div>
 
@@ -124,25 +134,36 @@ if (tipoCesta === "assinatura") { CESTA_TAMANHO = 12; VALOR_CESTA = 99.90; }
 
 const lista = document.getElementById("listaItens");
 const info = document.getElementById("infoCesta");
-info.textContent = `Escolha até ${CESTA_TAMANHO} unidades no total (máx. 3 por item).`;
+info.textContent = `Escolha até ${CESTA_TAMANHO} unidades no total, máximo de 3 por item.`;
 
-// ---------------- LISTA DE PRODUTOS ----------------
+// ---------------- ENDPOINTS (Make.com) ----------------
+const URL_LISTAR_ESTOQUE = "https://hook.us2.make.com/SEU_WEBHOOK_LISTAR_ESTOQUE"; // GET retorna [{nome:"Alface", estoque:12}, ...]
+const URL_GERAR_COBRANCA = "https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a";
+
+// ---------------- LISTA DE PRODUTOS COM ESTOQUE ----------------
 async function carregarProdutos() {
   try {
-    const r = await fetch("https://dubmuniz.github.io/humanahorti/produtos.json");
-    if (!r.ok) throw new Error("Falha ao carregar produtos.");
-    const produtos = await r.json();
+    const r = await fetch(URL_LISTAR_ESTOQUE, { method: "GET" });
+    if (!r.ok) throw new Error("Falha ao carregar estoque.");
+    /** esperado: [{nome, estoque}] */
+    const estoque = await r.json();
 
-    produtos.forEach(nome => {
+    const disponiveis = estoque.filter(p => Number(p.estoque) > 0);
+
+    if (disponiveis.length === 0) {
+      lista.innerHTML = `<div class="full" style="grid-column:1/-1;color:#6b7280">Sem itens disponíveis no momento</div>`;
+      return;
+    }
+
+    disponiveis.forEach(p => {
+      const maxItem = Math.min(3, Number(p.estoque) || 0);
       const div = document.createElement("div");
       div.className = "item";
+      const opts = Array.from({length: maxItem+1}, (_,i)=>`<option value="${i}">${i}</option>`).join("");
       div.innerHTML = `
-        <span>${nome}</span>
-        <select name="qtd" data-item="${nome}">
-          <option value="0">0</option>
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
+        <span>${p.nome}<span class="badge"> ${p.estoque} em estoque</span></span>
+        <select name="qtd" data-item="${p.nome}">
+          ${opts}
         </select>`;
       lista.appendChild(div);
     });
@@ -164,7 +185,7 @@ function verificarLimite() {
 
   if (total > CESTA_TAMANHO) {
     this.value = "0";
-    alert(`Limite excedido: máximo de ${CESTA_TAMANHO} unidades no total.`);
+    alert(`Limite excedido. Máximo de ${CESTA_TAMANHO} unidades no total.`);
   }
 }
 
@@ -191,15 +212,18 @@ form.addEventListener("submit", async e => {
     return;
   }
 
+  const observacao = document.getElementById("obs").value.trim();
+
   const payload = {
     idCliente,
     valor: VALOR_CESTA,
     itens: selecionados,
-    tipoCesta
+    tipoCesta,
+    observacao
   };
 
   try {
-    const resp = await fetch("https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a", {
+    const resp = await fetch(URL_GERAR_COBRANCA, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
