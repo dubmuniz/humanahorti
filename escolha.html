@@ -64,20 +64,41 @@ const info = document.getElementById("infoCesta");
 info.textContent = `Escolha até ${CESTA_TAMANHO} unidades no total, máximo de 3 por item.`;
 
 // --------- ENDPOINTS (Make.com) ---------
-const URL_LISTAR_ESTOQUE = "https://hook.us2.make.com/0newu13iu8oq31ojl1yb3zjv5pc7lywr"; // responde [{Item:"...", Estoque:"12"}, ...]
+const URL_LISTAR_ESTOQUE = "https://hook.us2.make.com/0newu13iu8oq31ojl1yb3zjv5pc7lywr"; // retorna [{Item:"...", Estoque:"12"}, ...]
 const URL_GERAR_COBRANCA = "https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a";
 
-// --------- LISTAR PRODUTOS (Sheet com colunas Item e Estoque) ---------
+// --------- LISTAR PRODUTOS (colunas Item e Estoque) ---------
 async function carregarProdutos(){
   try{
-    const r = await fetch(URL_LISTAR_ESTOQUE, { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" });
-    if(!r.ok) throw new Error("HTTP "+r.status);
-    const dados = await r.json();
+    const resp = await fetch(URL_LISTAR_ESTOQUE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    });
 
-    const disponiveis = (Array.isArray(dados) ? dados : [])
-      .map(p => ({ nome: p.Item, estoque: Number(p.Estoque) }))
-      .filter(p => p.nome && p.estoque > 0);
+    // aceita texto ou json
+    let raw = await resp.text();
+    let data;
+    try { data = JSON.parse(raw); }
+    catch {
+      const inner = raw.match(/\[.*\]|\{.*\}/s);
+      data = inner ? JSON.parse(inner[0]) : [];
+    }
 
+    // normaliza possíveis formatos
+    let arr = Array.isArray(data) ? data
+            : Array.isArray(data.root) ? data.root
+            : Array.isArray(data.data) ? data.data
+            : [];
+
+    const disponiveis = arr.map(p => {
+      const nome = p.Item ?? p.nome ?? p.item ?? "";
+      let estoque = p.Estoque ?? p.estoque ?? p.qtd ?? 0;
+      if (typeof estoque === "string") estoque = Number(estoque.replace(",", "."));
+      return { nome, estoque: Number(estoque) };
+    }).filter(p => p.nome && p.estoque > 0);
+
+    lista.innerHTML = "";
     if(disponiveis.length === 0){
       lista.innerHTML = `<div style="grid-column:1/-1;color:#64748b">Sem itens disponíveis no momento</div>`;
       return;
@@ -85,9 +106,9 @@ async function carregarProdutos(){
 
     disponiveis.forEach(p => {
       const maxItem = Math.min(3, p.estoque);
+      const opts = Array.from({length:maxItem+1}, (_,i)=>`<option value="${i}">${i}</option>`).join("");
       const div = document.createElement("div");
       div.className = "item";
-      const opts = Array.from({length:maxItem+1}, (_,i)=>`<option value="${i}">${i}</option>`).join("");
       div.innerHTML = `
         <span>${p.nome}<span class="badge">${p.estoque} em estoque</span></span>
         <select name="qtd" data-item="${p.nome}">${opts}</select>`;
@@ -96,7 +117,7 @@ async function carregarProdutos(){
 
     document.querySelectorAll('select[name="qtd"]').forEach(s => s.addEventListener('change', verificarLimite));
   }catch(e){
-    console.error(e);
+    console.error("Falha ao listar estoque:", e);
     alert("Erro ao carregar lista de produtos.");
   }
 }
@@ -161,4 +182,5 @@ document.getElementById("formItens").addEventListener("submit", async e=>{
 </script>
 </body>
 </html>
+
 
