@@ -7,9 +7,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;800&display=swap" rel="stylesheet">
 <style>
 :root{--verde:#37954a;--laranja:#f07e2d;--cinza:#f5f7f8}
-*{box-sizing:border-box} body{margin:0;font-family:Montserrat,sans-serif;color:#1a1a1a}
-.wrap{max-width:720px;margin:24px auto;padding:24px} header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-header img{height:56px} h1{margin:0;font-weight:800;font-size:1.4rem;color:var(--verde)}
+*{box-sizing:border-box}
+body{margin:0;font-family:Montserrat,sans-serif;background:#fff;color:#1a1a1a}
+.wrap{max-width:720px;margin:24px auto;padding:24px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+header img{height:56px;width:auto}
+h1{margin:0;font-weight:800;font-size:1.4rem;color:var(--verde)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--cinza);border-radius:10px}
 .badge{font-size:.8rem;color:#64748b;margin-left:8px}
@@ -33,8 +36,10 @@ textarea{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-rad
 
   <form id="formItens">
     <div id="listaItens" class="grid"></div>
+
     <label for="obs" class="obs">Observações do pedido</label>
     <textarea id="obs" placeholder="Ex.: entregar após 18h; se não tiver alface, enviar rúcula."></textarea>
+
     <button class="btn" type="submit">Gerar pagamento</button>
   </form>
 
@@ -42,48 +47,47 @@ textarea{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-rad
 </div>
 
 <script>
-// ------- params -------
+// --------- parâmetros ---------
 const params = new URLSearchParams(window.location.search);
 const idCliente = params.get("idCliente");
 const tipoCesta = params.get("cesta");
 
-// ------- cestas -------
-let CESTA_TAMANHO = 6, VALOR_CESTA = 59.90;
-if (tipoCesta==="12"){CESTA_TAMANHO=12;VALOR_CESTA=99.90;}
-if (tipoCesta==="18"){CESTA_TAMANHO=18;VALOR_CESTA=139.90;}
-if (tipoCesta==="assinatura"){CESTA_TAMANHO=12;VALOR_CESTA=99.90;}
+// --------- configuração das cestas ---------
+let CESTA_TAMANHO = 6;
+let VALOR_CESTA = 59.90;
+if (tipoCesta === "12"){ CESTA_TAMANHO = 12; VALOR_CESTA = 99.90; }
+if (tipoCesta === "18"){ CESTA_TAMANHO = 18; VALOR_CESTA = 139.90; }
+if (tipoCesta === "assinatura"){ CESTA_TAMANHO = 12; VALOR_CESTA = 99.90; }
 
 const lista = document.getElementById("listaItens");
 document.getElementById("infoCesta").textContent =
   `Escolha até ${CESTA_TAMANHO} unidades no total, máximo de 3 por item.`;
 
-// ------- endpoints -------
-const URL_LISTAR_ESTOQUE = "https://hook.us2.make.com/0newu13iu8oq31ojl1yb3zjv5pc7lywr";
+// --------- endpoints ---------
+const URL_LISTAR_ESTOQUE = "https://hook.us2.make.com/0newu13iu8oq31ojl1yb3zjv5pc7lywr"; // retorna [{ "0": "Item", "1": 20 }, ...]
 const URL_GERAR_COBRANCA = "https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a";
 
-// ------- carregar estoque -------
+// --------- carregar estoque ---------
 async function carregarProdutos(){
   try{
-    // use GET para evitar preflight/CORS
     const resp = await fetch(URL_LISTAR_ESTOQUE + "?t=" + Date.now(), { method:"GET" });
-    const rawText = await resp.text();
-    console.log("estoque raw:", rawText);
-
+    const raw = await resp.text();
     let data;
-    try { data = JSON.parse(rawText); }
+    try { data = JSON.parse(raw); }
     catch {
-      const m = rawText.match(/\[.*\]|\{.*\}/s);
+      const m = raw.match(/\[.*\]|\{.*\}/s);
       data = m ? JSON.parse(m[0]) : [];
     }
 
-    let arr = Array.isArray(data) ? data
-            : Array.isArray(data.root) ? data.root
-            : Array.isArray(data.data) ? data.data
-            : [];
+    // aceita formatos com chaves "Item"/"Estoque" ou "0"/"1"
+    const arr = Array.isArray(data) ? data
+             : Array.isArray(data.root) ? data.root
+             : Array.isArray(data.data) ? data.data
+             : [];
 
     const disponiveis = arr.map(p => {
-      const nome = p.Item ?? p.nome ?? p.item ?? "";
-      let estoque = p.Estoque ?? p.estoque ?? p.qtd ?? 0;
+      const nome = p.Item ?? p.nome ?? p.item ?? p["0"] ?? "";
+      let estoque = p.Estoque ?? p.estoque ?? p.qtd ?? p["1"] ?? 0;
       if (typeof estoque === "string") estoque = Number(estoque.replace(",", "."));
       return { nome, estoque: Number(estoque) };
     }).filter(p => p.nome && p.estoque > 0);
@@ -94,9 +98,9 @@ async function carregarProdutos(){
       return;
     }
 
-    disponiveis.forEach(p=>{
+    disponiveis.forEach(p => {
       const maxItem = Math.min(3, p.estoque);
-      const opts = Array.from({length:maxItem+1},(_,i)=>`<option value="${i}">${i}</option>`).join("");
+      const opts = Array.from({length:maxItem+1}, (_,i)=>`<option value="${i}">${i}</option>`).join("");
       const div = document.createElement("div");
       div.className = "item";
       div.innerHTML = `
@@ -105,50 +109,74 @@ async function carregarProdutos(){
       lista.appendChild(div);
     });
 
-    document.querySelectorAll('select[name="qtd"]').forEach(s=>s.addEventListener('change', verificarLimite));
+    document.querySelectorAll('select[name="qtd"]').forEach(s =>
+      s.addEventListener('change', verificarLimite)
+    );
   }catch(e){
     console.error("Falha ao listar estoque:", e);
     alert("Erro ao carregar lista de produtos.");
   }
 }
 
+// --------- limite total ---------
 function verificarLimite(){
   const total = [...document.querySelectorAll('select[name="qtd"]')]
-    .map(s=>parseInt(s.value||"0",10)).reduce((a,b)=>a+b,0);
-  if (total > CESTA_TAMANHO){ this.value="0"; alert(`Limite excedido. Máximo de ${CESTA_TAMANHO} unidades.`); }
+    .map(s => parseInt(s.value||"0",10))
+    .reduce((a,b)=>a+b,0);
+  if (total > CESTA_TAMANHO){
+    this.value = "0";
+    alert(`Limite excedido. Máximo de ${CESTA_TAMANHO} unidades no total.`);
+  }
 }
 carregarProdutos();
 
-// ------- submit -------
+// --------- envio ---------
 document.getElementById("formItens").addEventListener("submit", async e=>{
   e.preventDefault();
   const btn = e.target.querySelector(".btn");
-  btn.disabled = true; btn.textContent = "Gerando pagamento…";
+  btn.disabled = true;
+  btn.textContent = "Gerando pagamento…";
 
   const itens = [...document.querySelectorAll('select[name="qtd"]')]
-    .filter(s=>parseInt(s.value,10)>0)
-    .map(s=>({ nome:s.dataset.item, quantidade:parseInt(s.value,10) }));
+    .filter(s => parseInt(s.value,10) > 0)
+    .map(s => ({ nome: s.dataset.item, quantidade: parseInt(s.value,10) }));
 
-  const total = itens.reduce((a,i)=>a+i.quantidade,0);
-  if (total===0){ alert("Escolha ao menos um item."); btn.disabled=false; btn.textContent="Gerar pagamento"; return; }
+  const total = itens.reduce((acc,i)=>acc+i.quantidade,0);
+  if (total === 0){
+    alert("Escolha ao menos um item.");
+    btn.disabled = false; btn.textContent = "Gerar pagamento";
+    return;
+  }
 
-  const payload = { idCliente, valor: VALOR_CESTA, itens, tipoCesta,
-                    observacao: document.getElementById("obs").value.trim() };
+  const payload = {
+    idCliente,
+    valor: VALOR_CESTA,
+    itens,
+    tipoCesta,
+    observacao: document.getElementById("obs").value.trim()
+  };
 
   try{
     const r = await fetch(URL_GERAR_COBRANCA, {
-      method:"POST", headers:{ "Content-Type":"application/json" },
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify(payload)
     });
     const data = await r.json();
-    if (data && data.paymentLink) window.location.href = data.paymentLink;
-    else { console.error("Resp inesperada:", data); alert("Erro ao gerar link."); btn.disabled=false; btn.textContent="Gerar pagamento"; }
+    if (data && data.paymentLink){
+      window.location.href = data.paymentLink;
+    }else{
+      console.error("Resposta inesperada:", data);
+      alert("Erro ao gerar link de pagamento.");
+      btn.disabled = false; btn.textContent = "Gerar pagamento";
+    }
   }catch(err){
-    console.error(err); alert("Erro de conexão."); btn.disabled=false; btn.textContent="Gerar pagamento";
+    console.error(err);
+    alert("Erro de conexão com o servidor.");
+    btn.disabled = false; btn.textContent = "Gerar pagamento";
   }
 });
 </script>
 </body>
 </html>
-
 
