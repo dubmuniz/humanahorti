@@ -6,23 +6,22 @@
 <title>Humana Brasil • Escolha dos Itens</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;800&display=swap" rel="stylesheet">
 <style>
-:root { --verde:#37954a; --laranja:#f07e2d; --cinza:#f5f7f8; }
+:root{--verde:#37954a;--laranja:#f07e2d;--cinza:#f5f7f8}
 *{box-sizing:border-box}
 body{margin:0;font-family:Montserrat,sans-serif;background:#fff;color:#1a1a1a}
 .wrap{max-width:720px;margin:24px auto;padding:24px}
-header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 header img{height:56px;width:auto}
 h1{margin:0;font-weight:800;font-size:1.4rem;color:var(--verde)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--cinza);border-radius:10px}
 .badge{font-size:.8rem;color:#64748b;margin-left:8px}
-select{padding:6px;border-radius:8px;border:1px solid #ccc;font-family:inherit;font-size:.95rem;width:64px;text-align:center}
-textarea{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;font-family:inherit;font-size:1rem;margin-top:8px}
+select{padding:6px 8px;border-radius:8px;border:1px solid #cbd5e1;font:inherit;width:64px;text-align:center}
 label.obs{display:block;margin-top:16px;font-weight:600}
-.btn{appearance:none;border:0;border-radius:14px;padding:14px 18px;background:var(--laranja);color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:16px;transition:background .2s}
-.btn:hover:not(:disabled){background:#e56e15}
-.btn:disabled{opacity:.7;cursor:not-allowed}
-.footer{margin-top:16px;font-size:.85rem;color:#4b5563;text-align:center}
+textarea{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;font:inherit;margin-top:8px}
+.btn{appearance:none;border:0;border-radius:14px;padding:14px 18px;background:var(--laranja);color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:16px}
+.btn:disabled{opacity:.65;cursor:not-allowed}
+.footer{margin-top:16px;font-size:.9rem;color:#475569;text-align:center}
 </style>
 </head>
 <body>
@@ -31,7 +30,7 @@ label.obs{display:block;margin-top:16px;font-weight:600}
     <img src="logo-humana-1-1080x480.png" alt="Humana Brasil">
     <div>
       <h1>Monte sua cesta</h1>
-      <p id="infoCesta">Carregando...</p>
+      <p id="infoCesta">Carregando…</p>
     </div>
   </header>
 
@@ -39,61 +38,48 @@ label.obs{display:block;margin-top:16px;font-weight:600}
     <div id="listaItens" class="grid"></div>
 
     <label for="obs" class="obs">Observações do pedido</label>
-    <textarea id="obs" placeholder="Ex.: trocar alface por rúcula se não tiver. Entregar após 18h."></textarea>
+    <textarea id="obs" placeholder="Ex.: entregar após 18h; se não tiver alface, enviar rúcula."></textarea>
 
     <button class="btn" type="submit">Gerar pagamento</button>
   </form>
 
-  <p class="footer">
-    Após confirmar você será redirecionado ao link oficial do Asaas para pagamento.
-  </p>
+  <p class="footer">Após confirmar você será redirecionado ao link oficial do Asaas para pagamento seguro.</p>
 </div>
 
 <script>
-// ---------------- PARÂMETROS ----------------
+// --------- PARÂMETROS ---------
 const params = new URLSearchParams(window.location.search);
 const idCliente = params.get("idCliente");
 const tipoCesta = params.get("cesta");
 
-// ---------------- CONFIG CESTAS ----------------
+// --------- CONFIG CESTAS ---------
 let CESTA_TAMANHO = 6;
 let VALOR_CESTA = 59.90;
-if (tipoCesta === "12") { CESTA_TAMANHO = 12; VALOR_CESTA = 99.90; }
-if (tipoCesta === "18") { CESTA_TAMANHO = 18; VALOR_CESTA = 139.90; }
-if (tipoCesta === "assinatura") { CESTA_TAMANHO = 12; VALOR_CESTA = 99.90; }
+if (tipoCesta === "12"){ CESTA_TAMANHO = 12; VALOR_CESTA = 99.90; }
+if (tipoCesta === "18"){ CESTA_TAMANHO = 18; VALOR_CESTA = 139.90; }
+if (tipoCesta === "assinatura"){ CESTA_TAMANHO = 12; VALOR_CESTA = 99.90; }
 
 const lista = document.getElementById("listaItens");
 const info = document.getElementById("infoCesta");
 info.textContent = `Escolha até ${CESTA_TAMANHO} unidades no total, máximo de 3 por item.`;
 
-// ---------------- ENDPOINTS ----------------
-// LISTAR_ESTOQUE deve ser um webhook do Make configurado para aceitar POST e responder JSON no formato:
-// [ { "nome":"Alface", "estoque":12 }, ... ]
-const URL_LISTAR_ESTOQUE = "https://hook.us2.make.com/0newu13iu8oq31ojl1yb3zjv5pc7lywr";
-const URL_GERAR_COBRANCA  = "https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a";
+// --------- ENDPOINTS (Make.com) ---------
+const URL_LISTAR_ESTOQUE = "https://hook.us2.make.com/0newu13iu8oq31ojl1yb3zjv5pc7lywr"; // responde [{Item:"...", Estoque:"12"}, ...]
+const URL_GERAR_COBRANCA = "https://hook.us2.make.com/aryvagl26r8dplz79j1nn3jlluc3vw6a";
 
-// ---------------- LISTA DE PRODUTOS ----------------
-async function carregarProdutos() {
-  try {
-    // Make custom webhook padrão espera POST. Envie body vazio.
-    const r = await fetch(`${URL_LISTAR_ESTOQUE}?_=${Date.now()}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}"
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    let data = await r.json();
+// --------- LISTAR PRODUTOS (Sheet com colunas Item e Estoque) ---------
+async function carregarProdutos(){
+  try{
+    const r = await fetch(URL_LISTAR_ESTOQUE, { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const dados = await r.json();
 
-    // Aceita {data:[...]} ou [...]
-    const rows = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
-    if (!rows.length) throw new Error("Resposta vazia");
-
-    const disponiveis = rows
-      .map(p => ({ nome: p.nome ?? p.produto ?? "", estoque: Number(p.estoque ?? p.estoque_atual ?? 0) }))
+    const disponiveis = (Array.isArray(dados) ? dados : [])
+      .map(p => ({ nome: p.Item, estoque: Number(p.Estoque) }))
       .filter(p => p.nome && p.estoque > 0);
 
-    if (!disponiveis.length) {
-      lista.innerHTML = `<div style="grid-column:1/-1;color:#6b7280">Sem itens disponíveis no momento</div>`;
+    if(disponiveis.length === 0){
+      lista.innerHTML = `<div style="grid-column:1/-1;color:#64748b">Sem itens disponíveis no momento</div>`;
       return;
     }
 
@@ -101,91 +87,78 @@ async function carregarProdutos() {
       const maxItem = Math.min(3, p.estoque);
       const div = document.createElement("div");
       div.className = "item";
-      const opts = Array.from({length: maxItem+1}, (_,i)=>`<option value="${i}">${i}</option>`).join("");
+      const opts = Array.from({length:maxItem+1}, (_,i)=>`<option value="${i}">${i}</option>`).join("");
       div.innerHTML = `
         <span>${p.nome}<span class="badge">${p.estoque} em estoque</span></span>
-        <select name="qtd" data-item="${p.nome}">
-          ${opts}
-        </select>`;
+        <select name="qtd" data-item="${p.nome}">${opts}</select>`;
       lista.appendChild(div);
     });
 
-    document.querySelectorAll('select[name="qtd"]').forEach(sel => {
-      sel.addEventListener('change', verificarLimite);
-    });
-  } catch (err) {
-    console.error("Falha ao listar estoque:", err);
-    alert("Erro ao carregar lista de produtos. Verifique o webhook de estoque no Make.");
+    document.querySelectorAll('select[name="qtd"]').forEach(s => s.addEventListener('change', verificarLimite));
+  }catch(e){
+    console.error(e);
+    alert("Erro ao carregar lista de produtos.");
   }
 }
 
-// ---------------- LIMITE TOTAL ----------------
-function verificarLimite() {
+// --------- LIMITE TOTAL ---------
+function verificarLimite(){
   const total = [...document.querySelectorAll('select[name="qtd"]')]
     .map(s => parseInt(s.value||"0",10))
-    .reduce((a,b) => a+b, 0);
-  if (total > CESTA_TAMANHO) {
+    .reduce((a,b)=>a+b,0);
+  if(total > CESTA_TAMANHO){
     this.value = "0";
     alert(`Limite excedido. Máximo de ${CESTA_TAMANHO} unidades no total.`);
   }
 }
-
 carregarProdutos();
 
-// ---------------- ENVIO DO FORMULÁRIO ----------------
-const form = document.getElementById("formItens");
-form.addEventListener("submit", async e => {
+// --------- SUBMIT ---------
+document.getElementById("formItens").addEventListener("submit", async e=>{
   e.preventDefault();
+  const btn = e.target.querySelector(".btn");
+  btn.disabled = true; btn.textContent = "Gerando pagamento…";
 
-  const botao = form.querySelector(".btn");
-  botao.disabled = true;
-  botao.textContent = "Gerando pagamento...";
-
-  const selecionados = [...document.querySelectorAll('select[name="qtd"]')]
+  const itens = [...document.querySelectorAll('select[name="qtd"]')]
     .filter(s => parseInt(s.value,10) > 0)
     .map(s => ({ nome: s.dataset.item, quantidade: parseInt(s.value,10) }));
 
-  const total = selecionados.reduce((acc, i) => acc + i.quantidade, 0);
-  if (total === 0) {
+  const total = itens.reduce((acc,i)=>acc+i.quantidade,0);
+  if(total === 0){
     alert("Escolha ao menos um item.");
-    botao.disabled = false;
-    botao.textContent = "Gerar pagamento";
+    btn.disabled = false; btn.textContent = "Gerar pagamento";
     return;
   }
-
-  const observacao = document.getElementById("obs").value.trim();
 
   const payload = {
     idCliente,
     valor: VALOR_CESTA,
-    itens: selecionados,
+    itens,
     tipoCesta,
-    observacao
+    observacao: document.getElementById("obs").value.trim()
   };
 
-  try {
+  try{
     const resp = await fetch(URL_GERAR_COBRANCA, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify(payload)
     });
     const data = await resp.json();
-
-    if (data && data.paymentLink) {
+    if(data && data.paymentLink){
       window.location.href = data.paymentLink;
-    } else {
+    }else{
       console.error("Resposta inesperada:", data);
       alert("Erro ao gerar link de pagamento.");
-      botao.disabled = false;
-      botao.textContent = "Gerar pagamento";
+      btn.disabled = false; btn.textContent = "Gerar pagamento";
     }
-  } catch (e) {
-    console.error(e);
+  }catch(err){
+    console.error(err);
     alert("Erro de conexão com o servidor.");
-    botao.disabled = false;
-    botao.textContent = "Gerar pagamento";
+    btn.disabled = false; btn.textContent = "Gerar pagamento";
   }
 });
 </script>
 </body>
 </html>
+
